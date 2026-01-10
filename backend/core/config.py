@@ -19,7 +19,7 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = "postgresql+asyncpg://admin:password@localhost:5432/legal_booking"
     
     # Redis
     REDIS_URL: str
@@ -30,11 +30,22 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALGORITHM: str = "HS256"
 
-    # External APIs (Optional for now, but good to have)
-    # RAZORPAY_KEY_ID: str = ""
-    # RAZORPAY_KEY_SECRET: str = ""
-    # GEMINI_API_KEY: str = ""
-    # AGORA_APP_ID: str = ""
+    # External APIs
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    GEMINI_API_KEY: str = ""
+    AGORA_APP_ID: str = ""
+    AGORA_APP_CERTIFICATE: str = ""
+    
+    # AWS S3
+    AWS_ACCESS_KEY: str = ""
+    AWS_SECRET_KEY: str = ""
+    AWS_S3_BUCKET: str = "legal-booking-bucket"
+    AWS_REGION: str = "ap-south-1"
+
+    # Pinecone
+    PINECONE_API_KEY: str = ""
+    PINECONE_ENVIRONMENT: str = ""
 
     class Config:
         case_sensitive = True

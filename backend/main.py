@@ -24,7 +24,14 @@ if settings.BACKEND_CORS_ORIGINS:
 def read_root():
     return {"message": f"Welcome to {settings.PROJECT_NAME} API"}
 
+from fastapi.staticfiles import StaticFiles
+import os
+
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Mount static directory for local storage
+os.makedirs("static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("startup")
 async def startup_event():

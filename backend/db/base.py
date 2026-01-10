@@ -1,12 +1,13 @@
-from typing import Any
-from sqlalchemy.orm import as_declarative, declared_attr
+from db.base_class import Base
 
-@as_declarative()
-class Base:
-    id: Any
-    __name__: str
-    
-    # Generate __tablename__ automatically
-    @declared_attr
-    def __tablename__(cls) -> str:
-        return cls.__name__.lower()
+# Import all models here for Alembic/metadata
+from models.user import User
+from models.location import State, District, Court, PoliceStation
+from models.specialization import Specialization
+from models.lawyer import Lawyer, LawyerCourt, LawyerSpecialization
+from models.booking import Booking, BookingHistory
+from models.payment import Payment, Escrow
+from models.consultation import Consultation
+from models.chat import Message
+from models.review import Review
+from models.notification import Notification

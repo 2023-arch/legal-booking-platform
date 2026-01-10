@@ -28,9 +28,8 @@ services:
     environment:
       DATABASE_URL: postgresql://admin:password@postgres:5432/legal_booking
       REDIS_URL: redis://redis:6379
-      SECRET_KEY: ${SECRET_KEY:-changethis}
-      ACCESS_TOKEN_EXPIRE_MINUTES: 15
-      REFRESH_TOKEN_EXPIRE_DAYS: 7
+    env_file:
+      - ./backend/.env
     depends_on:
       - postgres
       - redis
@@ -40,7 +39,7 @@ services:
       - ./backend:/app
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
