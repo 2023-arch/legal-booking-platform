@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: legal_booking
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - legal_net
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - legal_net
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://admin:password@postgres:5432/legal_booking
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY:-changethis}
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - legal_net
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    depends_on:
+      - backend
+    networks:
+      - legal_net
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+networks:
+  legal_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
