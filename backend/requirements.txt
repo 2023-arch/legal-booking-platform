@@ -12,6 +12,7 @@ redis
 httpx
 boto3
 google-generativeai
+cloudinary
 razorpay
 sentry-sdk
 slowapi

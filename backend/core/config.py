@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     AWS_SECRET_KEY: str = ""
     AWS_S3_BUCKET: str = "legal-booking-bucket"
     AWS_REGION: str = "ap-south-1"
+    
+    # Cloudinary (Free Tier Storage)
+    USE_CLOUDINARY: bool = True
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
 
     # Pinecone
     PINECONE_API_KEY: str = ""
