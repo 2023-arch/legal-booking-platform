@@ -167,8 +167,9 @@ async def verify_lawyer(
         raise HTTPException(status_code=404, detail="Lawyer not found")
 
     if action == "approve":
+        from datetime import datetime
         lawyer.verification_status = "verified"
-        lawyer.verified_at = func.now()
+        lawyer.verified_at = datetime.utcnow()
         lawyer.verified_by = current_user.id
         lawyer.user.is_verified = True # Update User level flag too
     else:

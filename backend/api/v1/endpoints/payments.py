@@ -89,10 +89,9 @@ async def verify_payment(
         status='captured',
         razorpay_order_id=payment_in.razorpay_order_id,
         razorpay_payment_id=payment_in.razorpay_payment_id,
-        razorpay_signature=payment_in.razorpay_signature,
-        captured_at=func.now() if 'func' in locals() else None # Need generic import or datetime
+        razorpay_signature=payment_in.razorpay_signature
     )
-    # Fix captured_at
+    # Set captured_at
     from datetime import datetime
     payment.captured_at = datetime.utcnow()
     
