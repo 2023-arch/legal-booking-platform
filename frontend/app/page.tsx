@@ -1,65 +1,141 @@
-import Image from "next/image";
+'use client';
+
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Search, Scale, Shield, Users, Star, Clock } from 'lucide-react';
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    return (
+        <div className="min-h-screen">
+            {/* Navbar */}
+            <nav className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Scale className="h-6 w-6" />
+                        <span className="font-bold text-xl">LegalBook</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Link href="/search">
+                            <Button variant="ghost">Find Lawyers</Button>
+                        </Link>
+                        <Link href="/auth/login">
+                            <Button variant="outline">Login</Button>
+                        </Link>
+                        <Link href="/auth/register">
+                            <Button>Get Started</Button>
+                        </Link>
+                    </div>
+                </div>
+            </nav>
+
+            {/* Hero Section */}
+            <section className="py-20 px-4 bg-gradient-to-b from-blue-50 to-white">
+                <div className="container mx-auto max-w-4xl text-center">
+                    <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        Find Your Perfect Legal Expert
+                    </h1>
+                    <p className="text-xl text-gray-600 mb-8">
+                        Connect with verified lawyers across India. Book consultations instantly.
+                    </p>
+
+                    {/* Search Bar */}
+                    <div className="flex gap-2 max-w-2xl mx-auto mb-12">
+                        <Input
+                            placeholder="Search by specialization, location, or name..."
+                            className="h-12 text-base"
+                        />
+                        <Button size="lg" className="h-12 px-8">
+                            <Search className="mr-2 h-5 w-5" />
+                            Search
+                        </Button>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+                        <div>
+                            <div className="text-3xl font-bold text-blue-600">5000+</div>
+                            <div className="text-sm text-gray-600">Verified Lawyers</div>
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold text-blue-600">50+</div>
+                            <div className="text-sm text-gray-600">Specializations</div>
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold text-blue-600">10k+</div>
+                            <div className="text-sm text-gray-600">Happy Clients</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Features */}
+            <section className="py-16 px-4">
+                <div className="container mx-auto max-w-6xl">
+                    <h2 className="text-3xl font-bold text-center mb-12">Why Choose LegalBook?</h2>
+                    <div className="grid md:grid-cols-3 gap-8">
+                        <Card>
+                            <CardHeader>
+                                <Shield className="h-12 w-12 text-blue-600 mb-4" />
+                                <CardTitle>Verified Lawyers</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-gray-600">
+                                    All lawyers are verified with Bar Council certificates and ID proof.
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <Clock className="h-12 w-12 text-blue-600 mb-4" />
+                                <CardTitle>Instant Booking</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-gray-600">
+                                    Book consultations in minutes. Get confirmed within hours.
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <Star className="h-12 w-12 text-blue-600 mb-4" />
+                                <CardTitle>Trusted Reviews</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-gray-600">
+                                    Read genuine reviews from real clients before booking.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA for Lawyers */}
+            <section className="py-16 px-4 bg-blue-600 text-white">
+                <div className="container mx-auto max-w-4xl text-center">
+                    <Users className="h-16 w-16 mx-auto mb-6" />
+                    <h2 className="text-3xl font-bold mb-4">Are You a Lawyer?</h2>
+                    <p className="text-xl mb-8 text-blue-100">
+                        Join our platform and connect with clients across India
+                    </p>
+                    <Link href="/auth/lawyer-register">
+                        <Button size="lg" variant="secondary" className="h-12 px-8">
+                            Register as Lawyer
+                        </Button>
+                    </Link>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="border-t py-8 px-4 bg-gray-50">
+                <div className="container mx-auto text-center text-gray-600">
+                    <p>&copy; 2026 LegalBook. All rights reserved.</p>
+                </div>
+            </footer>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+    );
 }
