@@ -78,7 +78,7 @@ export default function EarningsPage() {
                                 tickFormatter={(value) => `₹${value}`}
                             />
                             <Tooltip
-                                formatter={(value: number) => [`₹${value}`, "Revenue"]}
+                                formatter={(value: any) => [`₹${value}`, "Revenue"]}
                                 contentStyle={{ borderRadius: '8px' }}
                             />
                             <Bar dataKey="total" fill="#16a34a" radius={[4, 4, 0, 0]} />
