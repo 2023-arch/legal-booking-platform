@@ -1,4 +1,4 @@
-import AdminSidebar from '@/components/dashboard/AdminSidebar';
+import AdminSidebar from '@/components/admin/AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Bell, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

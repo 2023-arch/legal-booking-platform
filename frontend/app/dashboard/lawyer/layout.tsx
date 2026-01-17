@@ -18,14 +18,10 @@ export default function LawyerDashboardLayout({
             <div className="pl-64">
                 {/* Dashboard Header */}
                 <header className="h-16 bg-white border-b flex items-center justify-between px-8 sticky top-0 z-10">
-                    <div className="flex items-center w-full max-w-md">
-                        <div className="relative w-full">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="search"
-                                placeholder="Search cases, clients..."
-                                className="w-full bg-slate-50 pl-8 md:w-[300px] lg:w-[300px]"
-                            />
+                    <div className="w-96">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input placeholder="Search cases, clients..." className="pl-9 h-9 bg-slate-50 border-slate-200" />
                         </div>
                     </div>
 
@@ -37,12 +33,12 @@ export default function LawyerDashboardLayout({
                         <div className="h-8 w-px bg-slate-200" />
                         <div className="flex items-center gap-3">
                             <div className="text-right hidden md:block">
-                                <div className="text-sm font-medium text-slate-900">Adv. Rajesh</div>
-                                <div className="text-xs text-green-600 font-medium">Verified Partner</div>
+                                <div className="text-sm font-medium text-slate-900">Adv. Priya UI</div>
+                                <div className="text-xs text-green-600 font-medium">● Online</div>
                             </div>
                             <Avatar>
                                 <AvatarImage src="https://github.com/shadcn.png" />
-                                <AvatarFallback>AR</AvatarFallback>
+                                <AvatarFallback>PS</AvatarFallback>
                             </Avatar>
                         </div>
                     </div>
