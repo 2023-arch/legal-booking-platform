@@ -51,6 +51,9 @@ export default function LoginPage() {
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
 
+            // Set cookie for Middleware (expires in 1 day)
+            document.cookie = `token=${data.access_token}; path=/; max-age=86400; SameSite=Strict`;
+
             // Redirect logic
             try {
                 const user = await authAPI.getCurrentUser();
