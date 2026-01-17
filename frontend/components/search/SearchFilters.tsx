@@ -1,155 +1,91 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from "react";
-import { Label } from "@/components/ui/label";
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { formatCurrency } from "@/lib/utils";
-import { FilterX } from "lucide-react";
 import { INDIAN_STATES_AND_DISTRICTS, SPECIALIZATIONS } from "@/lib/constants";
+import PriceRangeSlider from "./PriceRangeSlider";
 
 export default function SearchFilters() {
-    // Local state
-    const [selectedState, setSelectedState] = useState<string>("");
-    const [selectedDistrict, setSelectedDistrict] = useState<string>("");
-    const [priceRange, setPriceRange] = useState([2000]);
-    const [selectedSpecs, setSelectedSpecs] = useState<string[]>([]);
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
-    // Derived state for districts
-    const districts = useMemo(() => {
-        if (!selectedState) return [];
-        return INDIAN_STATES_AND_DISTRICTS[selectedState] || [];
-    }, [selectedState]);
+    // Derive initial state from URL params
+    const qParam = searchParams.get('q') || '';
+    const locParam = searchParams.get('location') || '';
 
-    const handleClear = () => {
-        setSelectedState("");
-        setSelectedDistrict("");
-        setPriceRange([2000]);
-        setSelectedSpecs([]);
+    // TODO: Maintain more complex state or simple form ref
+    const handleReset = () => {
+        router.push('/search');
     };
 
-    // Handle state change (reset district)
-    const handleStateChange = (value: string) => {
-        setSelectedState(value);
-        setSelectedDistrict(""); // Reset district when state changes
-    };
+    // Note: In a real app, these states would be lifted or managed via URL sync directly.
+    // For now, minimal implementation that syncs simple filters.
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
+            {/* Header */}
             <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Filters</h3>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-slate-500 hover:text-red-600 h-8 px-2"
-                    onClick={handleClear}
-                >
-                    <FilterX className="h-4 w-4 mr-1" /> Clear
+                <h2 className="font-semibold text-lg text-slate-900">Filters</h2>
+                <Button variant="ghost" size="sm" onClick={handleReset} className="text-slate-500 hover:text-blue-600 h-8 px-2">
+                    Clear All
                 </Button>
             </div>
 
-            {/* Location Filter */}
-            <div className="space-y-3">
-                <Label>Location</Label>
+            {/* Price Range */}
+            <div className="pb-4 border-b border-slate-100">
+                <PriceRangeSlider
+                    min={500}
+                    max={10000}
+                    onValueChange={(val) => console.log(val)}
+                />
+            </div>
 
-                {/* State Select */}
-                <Select value={selectedState} onValueChange={handleStateChange}>
+            {/* Specialization */}
+            <div className="space-y-3 pb-4 border-b border-slate-100">
+                <Label className="text-base font-semibold text-slate-900">Specialization</Label>
+                <Select defaultValue={qParam}>
                     <SelectTrigger>
-                        <SelectValue placeholder="Select State" />
+                        <SelectValue placeholder="Select Area of Law" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[200px]">
-                        {Object.keys(INDIAN_STATES_AND_DISTRICTS).map((state) => (
-                            <SelectItem key={state} value={state} className="capitalize">
-                                {state}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-
-                {/* District Select */}
-                <Select
-                    value={selectedDistrict}
-                    onValueChange={setSelectedDistrict}
-                    disabled={!selectedState || districts.length === 0}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select District" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[200px]">
-                        {districts.map((district) => (
-                            <SelectItem key={district} value={district}>
-                                {district}
-                            </SelectItem>
+                    <SelectContent>
+                        {SPECIALIZATIONS.map((spec) => (
+                            <SelectItem key={spec} value={spec}>{spec}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
             </div>
 
-            <Accordion type="multiple" defaultValue={["spec", "price", "exp"]} className="w-full">
+            {/* Experience */}
+            <div className="space-y-3 pb-4 border-b border-slate-100">
+                <Label className="text-base font-semibold text-slate-900">Experience</Label>
+                <div className="space-y-2">
+                    {["5+ Years", "10+ Years", "15+ Years"].map((exp) => (
+                        <div key={exp} className="flex items-center space-x-2">
+                            <Checkbox id={exp} />
+                            <Label htmlFor={exp} className="text-sm font-normal text-slate-600 cursor-pointer">{exp}</Label>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
-                {/* Specialization */}
-                <AccordionItem value="spec">
-                    <AccordionTrigger>Specialization</AccordionTrigger>
-                    <AccordionContent>
-                        <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                            {SPECIALIZATIONS.map((spec) => (
-                                <div key={spec} className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id={spec}
-                                        checked={selectedSpecs.includes(spec)}
-                                        onCheckedChange={(checked) => {
-                                            if (checked) setSelectedSpecs([...selectedSpecs, spec]);
-                                            else setSelectedSpecs(selectedSpecs.filter(s => s !== spec));
-                                        }}
-                                    />
-                                    <Label htmlFor={spec} className="font-normal cursor-pointer leading-tight py-1">{spec}</Label>
-                                </div>
-                            ))}
+            {/* Rating */}
+            <div className="space-y-3">
+                <Label className="text-base font-semibold text-slate-900">Rating</Label>
+                <div className="space-y-2">
+                    {[4, 3, 2].map((rating) => (
+                        <div key={rating} className="flex items-center space-x-2">
+                            <Checkbox id={`rating-${rating}`} />
+                            <Label htmlFor={`rating-${rating}`} className="text-sm font-normal text-slate-600 cursor-pointer flex items-center">
+                                {rating}+ Stars
+                            </Label>
                         </div>
-                    </AccordionContent>
-                </AccordionItem>
-
-                {/* Price Range */}
-                <AccordionItem value="price">
-                    <AccordionTrigger>Consultation Fee</AccordionTrigger>
-                    <AccordionContent>
-                        <div className="px-2 pt-2 pb-6">
-                            <Slider
-                                value={priceRange}
-                                onValueChange={setPriceRange}
-                                max={10000}
-                                step={500}
-                            />
-                        </div>
-                        <div className="flex justify-between text-xs text-slate-500">
-                            <span>{formatCurrency(500)}</span>
-                            <span>{formatCurrency(priceRange[0])}</span>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-
-                {/* Experience */}
-                <AccordionItem value="exp">
-                    <AccordionTrigger>Experience</AccordionTrigger>
-                    <AccordionContent>
-                        <div className="space-y-2">
-                            {[
-                                { id: 'exp-1', label: '5+ Years' },
-                                { id: 'exp-2', label: '10+ Years' },
-                                { id: 'exp-3', label: '15+ Years' },
-                            ].map((item) => (
-                                <div key={item.id} className="flex items-center space-x-2">
-                                    <Checkbox id={item.id} />
-                                    <Label htmlFor={item.id} className="font-normal cursor-pointer">{item.label}</Label>
-                                </div>
-                            ))}
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
