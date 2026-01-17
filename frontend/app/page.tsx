@@ -7,7 +7,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Star, Shield, Clock, ArrowRight, Gavel, Scale, Users, MessageSquare } from 'lucide-react';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 export default function Home() {
+    const router = useRouter();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [locationQuery, setLocationQuery] = useState('');
+
+    const handleSearch = () => {
+        const params = new URLSearchParams();
+        if (searchQuery) params.set('q', searchQuery);
+        if (locationQuery) params.set('location', locationQuery);
+
+        router.push(`/search?${params.toString()}`);
+    };
+
     return (
         <div className="flex flex-col min-h-screen">
 
@@ -42,6 +57,9 @@ export default function Home() {
                             <Input
                                 placeholder="Search by specialization (e.g. Divorce, Property)"
                                 className="pl-12 h-12 border-none shadow-none text-base focus-visible:ring-0 bg-transparent"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             />
                         </div>
                         <div className="hidden md:block w-px bg-slate-200 my-2" />
@@ -50,9 +68,16 @@ export default function Home() {
                             <Input
                                 placeholder="City or Pincode"
                                 className="pl-12 h-12 border-none shadow-none text-base focus-visible:ring-0 bg-transparent"
+                                value={locationQuery}
+                                onChange={(e) => setLocationQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             />
                         </div>
-                        <Button size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200">
+                        <Button
+                            size="lg"
+                            className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200"
+                            onClick={handleSearch}
+                        >
                             Find Lawyers
                         </Button>
                     </div>
