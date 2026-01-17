@@ -7,7 +7,6 @@ import { Star, MapPin, Briefcase, Gavel, Languages } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import BookingModal from "@/components/booking/BookingModal";
-import BookingModal from "@/components/booking/BookingModal";
 
 // Types (move to separate types file later)
 interface Lawyer {
