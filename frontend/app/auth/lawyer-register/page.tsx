@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Icons } from "@/components/ui/icons"
 import { Scale, ChevronRight, ChevronLeft, Upload, FileCheck, CheckCircle2 } from "lucide-react"
+import { authAPI } from "@/lib/api"
 
 // Schema for all steps
 const wizardSchema = z.object({
@@ -92,11 +93,34 @@ export default function LawyerRegisterWizard() {
         setIsLoading(true)
         console.log("Submitting Lawyer Application:", values)
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const formData = new FormData();
+
+            // Append Text Fields
+            formData.append('bar_council_number', values.barCouncilId);
+            formData.append('years_experience', values.experience);
+            formData.append('bio', values.bio);
+            formData.append('consultation_fee', values.consultationFee);
+
+            // Append JSON Fields
+            formData.append('languages', JSON.stringify(values.languages));
+            formData.append('specializations', JSON.stringify(values.specializations.map(s => ({ specialization_id: s })))); // Mock structure
+            formData.append('court_ids', JSON.stringify([values.courts])); // Mock structure: usually UUIDs
+
+            // Append Files
+            if (values.barCertificate) formData.append('bar_council_certificate', values.barCertificate);
+            if (values.idProof) formData.append('id_proof', values.idProof);
+            // formData.append('profile_photo', ...); 
+
+            await authAPI.registerLawyer(formData);
+
+            setIsSubmitted(true);
+        } catch (error: any) {
+            console.error("Submission failed:", error);
+            alert(error.response?.data?.detail || "Failed to submit application.");
+        } finally {
             setIsLoading(false)
-            setIsSubmitted(true)
-        }, 2000)
+        }
     }
 
     if (isSubmitted) {
@@ -361,9 +385,15 @@ export default function LawyerRegisterWizard() {
                                                 <FileCheck className="h-10 w-10 text-slate-400 mb-4" />
                                                 <h3 className="font-semibold text-lg">Bar Council Certificate</h3>
                                                 <p className="text-sm text-slate-500 mb-4">Upload your clear scanned certificate (PDF/JPG)</p>
-                                                <Button variant="outline" type="button">
-                                                    <Upload className="mr-2 h-4 w-4" /> Upload Document
-                                                </Button>
+                                                <Input
+                                                    type="file"
+                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) form.setValue('barCertificate', file);
+                                                    }}
+                                                    className="max-w-xs"
+                                                />
                                             </CardContent>
                                         </Card>
 
@@ -372,9 +402,15 @@ export default function LawyerRegisterWizard() {
                                                 <FileCheck className="h-10 w-10 text-slate-400 mb-4" />
                                                 <h3 className="font-semibold text-lg">Identity Proof</h3>
                                                 <p className="text-sm text-slate-500 mb-4">Aadhaar Card or PAN Card (PDF/JPG)</p>
-                                                <Button variant="outline" type="button">
-                                                    <Upload className="mr-2 h-4 w-4" /> Upload Document
-                                                </Button>
+                                                <Input
+                                                    type="file"
+                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) form.setValue('idProof', file);
+                                                    }}
+                                                    className="max-w-xs"
+                                                />
                                             </CardContent>
                                         </Card>
 

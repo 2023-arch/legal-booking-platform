@@ -30,4 +30,35 @@ api.interceptors.response.use(
     }
 );
 
+// Auth API Services
+export const authAPI = {
+    login: async (credentials: any) => {
+        const formData = new FormData();
+        formData.append('username', credentials.email);
+        formData.append('password', credentials.password);
+
+        const response = await api.post('/login', formData, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        return response.data;
+    },
+
+    register: async (userData: any) => {
+        const response = await api.post('/register', userData);
+        return response.data;
+    },
+
+    registerLawyer: async (lawyerData: FormData) => {
+        const response = await api.post('/lawyers/register', lawyerData, {
+            headers: { 'Content-Type': 'multipart/form-data' } // Browser sets boundary automatically with FormData
+        });
+        return response.data;
+    },
+
+    getCurrentUser: async () => {
+        const response = await api.get('/users/me');
+        return response.data;
+    }
+};
+
 export default api;

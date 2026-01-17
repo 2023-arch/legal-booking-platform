@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
+import { authAPI } from "@/lib/api"
 import {
     Form,
     FormControl,
@@ -43,15 +44,33 @@ export default function LoginPage() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true)
+        try {
+            const data = await authAPI.login(values);
 
-        // TODO: Integrate with backend API
-        console.log(values)
+            // Store tokens
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('refresh_token', data.refresh_token);
 
-        // Simulate login delay
-        setTimeout(() => {
+            // Redirect logic
+            try {
+                const user = await authAPI.getCurrentUser();
+                if (user.user_type === 'lawyer') {
+                    router.push('/dashboard/lawyer');
+                } else if (user.is_superuser) {
+                    router.push('/admin');
+                } else {
+                    router.push('/dashboard');
+                }
+            } catch (e) {
+                router.push('/dashboard'); // Fallback
+            }
+
+        } catch (error: any) {
+            console.error("Login failed:", error);
+            alert(error.response?.data?.detail || "Login failed. Please check your credentials.");
+        } finally {
             setIsLoading(false)
-            router.push("/dashboard")
-        }, 1500)
+        }
     }
 
     return (

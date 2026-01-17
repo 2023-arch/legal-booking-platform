@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
+import { authAPI } from "@/lib/api"
 import {
     Form,
     FormControl,
@@ -57,14 +58,51 @@ export default function RegisterPage() {
 
         // Redirect logic
         if (values.role === 'lawyer') {
-            router.push('/auth/lawyer-register') // Go to wizard
-        } else {
-            console.log(values)
-            // TODO: Call register API for regular user
-            setTimeout(() => {
+            // Check if backend uses separate reg for first step? 
+            // Usually auth.py Register works for both if user_type is passed
+            // user_type: "lawyer" -> creates user, then redirects to wizard
+
+            try {
+                // Register base user first
+                const data = await authAPI.register({
+                    email: values.email,
+                    password: values.password,
+                    full_name: values.fullName,
+                    phone: values.phone,
+                    user_type: "lawyer"
+                });
+
+                // Login automatically
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+
+                router.push('/auth/lawyer-register') // Go to wizard
+            } catch (error: any) {
+                console.error("Registration failed:", error);
+                alert(error.response?.data?.detail || "Registration failed. Please try again.");
                 setIsLoading(false)
+            }
+
+        } else {
+            try {
+                const data = await authAPI.register({
+                    email: values.email,
+                    password: values.password,
+                    full_name: values.fullName,
+                    phone: values.phone,
+                    user_type: "client"
+                });
+
+                // Login automatically
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+
                 router.push("/dashboard")
-            }, 1500)
+            } catch (error: any) {
+                console.error("Registration failed:", error);
+                alert(error.response?.data?.detail || "Registration failed. Please try again.");
+                setIsLoading(false)
+            }
         }
     }
 
