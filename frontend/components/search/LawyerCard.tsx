@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Star, MapPin, Briefcase, Gavel, Languages } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
+import BookingModal from "@/components/booking/BookingModal";
+import BookingModal from "@/components/booking/BookingModal";
 
 // Types (move to separate types file later)
 interface Lawyer {
@@ -95,11 +97,19 @@ export default function LawyerCard({ lawyer }: LawyerCardProps) {
                                 View Profile
                             </Button>
                         </Link>
-                        <Link href={`/booking/create?lawyer_id=${lawyer.id}`} className="flex-1">
-                            <Button className="w-full bg-slate-900 hover:bg-slate-800">
-                                Book <span className="hidden sm:inline ml-1">Consultation</span>
-                            </Button>
-                        </Link>
+
+                        <div className="flex-1">
+                            <BookingModal
+                                lawyerId={lawyer.id}
+                                lawyerName={lawyer.name}
+                                consultationFee={lawyer.consultation_fee}
+                                trigger={
+                                    <Button className="w-full bg-slate-900 hover:bg-slate-800">
+                                        Book <span className="hidden sm:inline ml-1">Consultation</span>
+                                    </Button>
+                                }
+                            />
+                        </div>
                     </div>
                 </CardContent>
             </div>
