@@ -75,6 +75,8 @@ export default function RegisterPage() {
                 // Login automatically
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
+                // Set cookie for middleware
+                document.cookie = `token=${data.access_token}; path=/; max-age=86400; SameSite=Strict`;
 
                 router.push('/auth/lawyer-register') // Go to wizard
             } catch (error: any) {
@@ -96,6 +98,8 @@ export default function RegisterPage() {
                 // Login automatically
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
+                // Set cookie for middleware
+                document.cookie = `token=${data.access_token}; path=/; max-age=86400; SameSite=Strict`;
 
                 router.push("/dashboard")
             } catch (error: any) {
