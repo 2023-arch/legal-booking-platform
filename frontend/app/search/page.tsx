@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import SearchFilters from "@/components/search/SearchFilters";
 import LawyerCard from "@/components/lawyer/LawyerCard";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,12 @@ const MOCK_LAWYERS = Array(8).fill(null).map((_, i) => ({
     verified: true,
 }));
 
+function SearchContent() {
+    return (
+        <SearchFilters />
+    );
+}
+
 export default function SearchPage() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -32,7 +38,9 @@ export default function SearchPage() {
                     {/* Desktop Sidebar */}
                     <aside className="hidden lg:block w-72 flex-shrink-0">
                         <div className="bg-white rounded-xl border border-slate-200 p-6 sticky top-24">
-                            <SearchFilters />
+                            <Suspense fallback={<div>Loading filters...</div>}>
+                                <SearchContent />
+                            </Suspense>
                         </div>
                     </aside>
 
@@ -47,7 +55,9 @@ export default function SearchPage() {
                             </SheetTrigger>
                             <SheetContent side="left" className="w-[300px] sm:w-[540px] overflow-y-auto">
                                 <div className="py-6">
-                                    <SearchFilters />
+                                    <Suspense fallback={<div>Loading filters...</div>}>
+                                        <SearchContent />
+                                    </Suspense>
                                 </div>
                             </SheetContent>
                         </Sheet>

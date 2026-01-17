@@ -116,7 +116,7 @@ export default function LawyerCard({
                     <BookingModal
                         lawyerId={id}
                         lawyerName={name}
-                        amount={price}
+                        consultationFee={price}
                         trigger={
                             <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                                 Book Now

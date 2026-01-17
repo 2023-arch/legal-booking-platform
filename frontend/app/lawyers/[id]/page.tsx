@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import {
     MapPin, Star, ShieldCheck, Clock, Award, Phone, Mail,
-    Share2, Heart, CheckCircle2, ChevronRight
+    Share2, Heart, CheckCircle2, ChevronRight, Languages
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -270,7 +270,7 @@ export default function LawyerProfilePage() {
                                     <BookingModal
                                         lawyerId={lawyer.id}
                                         lawyerName={lawyer.name}
-                                        amount={lawyer.fee}
+                                        consultationFee={lawyer.fee}
                                         trigger={
                                             <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 text-lg h-12">
                                                 Book Consultation
@@ -310,7 +310,7 @@ export default function LawyerProfilePage() {
                 <BookingModal
                     lawyerId={lawyer.id}
                     lawyerName={lawyer.name}
-                    amount={lawyer.fee}
+                    consultationFee={lawyer.fee}
                     trigger={
                         <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg px-8">
                             Book Now

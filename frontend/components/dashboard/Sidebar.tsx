@@ -1,71 +1,69 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
-    Calendar,
+    CalendarDays,
     MessageSquare,
-    User,
+    Settings,
     LogOut,
     Scale,
-    Settings,
-    HelpCircle
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+    FileText
+} from "lucide-react";
 
-const sidebarItems = [
-    { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
-    { icon: Calendar, label: 'My Bookings', href: '/dashboard/bookings' },
-    { icon: MessageSquare, label: 'AI Assistant', href: '/dashboard/ai-assistant' },
-    { icon: User, label: 'My Profile', href: '/dashboard/profile' },
-    { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+const sidebarLinks = [
+    { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+    { name: "My Bookings", href: "/dashboard/bookings", icon: CalendarDays },
+    { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+    { name: "Documents", href: "/dashboard/documents", icon: FileText },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
     const pathname = usePathname();
 
     return (
-        <div className="h-screen w-64 bg-slate-900 text-white flex flex-col fixed left-0 top-0">
-            {/* Brand */}
+        <aside className="fixed left-0 top-0 h-screen w-64 bg-slate-900 text-white flex flex-col z-50">
+            {/* Logo */}
             <div className="h-16 flex items-center px-6 border-b border-slate-800">
-                <Scale className="h-6 w-6 text-blue-500 mr-2" />
-                <span className="font-bold text-lg">LegalBook</span>
+                <Link href="/" className="flex items-center gap-2 font-bold text-lg hover:text-blue-400 transition-colors">
+                    <Scale className="h-6 w-6 text-blue-500" />
+                    <span>LegalBook</span>
+                </Link>
             </div>
 
             {/* Navigation */}
             <nav className="flex-1 py-6 px-3 space-y-1">
-                {sidebarItems.map((item) => {
-                    const isActive = pathname === item.href;
+                {sidebarLinks.map((link) => {
+                    const Icon = link.icon;
+                    const isActive = pathname === link.href;
                     return (
-                        <Link key={item.href} href={item.href}>
-                            <Button
-                                variant="ghost"
-                                className={cn(
-                                    "w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800 mb-1",
-                                    isActive && "bg-blue-600 text-white hover:bg-blue-700"
-                                )}
-                            >
-                                <item.icon className="h-5 w-5 mr-3" />
-                                {item.label}
-                            </Button>
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+                                isActive
+                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                            )}
+                        >
+                            <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-slate-500 group-hover:text-white")} />
+                            {link.name}
                         </Link>
                     );
                 })}
             </nav>
 
-            {/* Footer Actions */}
-            <div className="p-4 border-t border-slate-800 space-y-2">
-                <Button variant="ghost" className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800">
-                    <HelpCircle className="h-5 w-5 mr-3" />
-                    Help & Support
-                </Button>
-                <Button variant="ghost" className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-900/20">
-                    <LogOut className="h-5 w-5 mr-3" />
-                    Logout
-                </Button>
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-800">
+                <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors">
+                    <LogOut className="h-5 w-5" />
+                    Sign Out
+                </button>
             </div>
-        </div>
+        </aside>
     );
 }
