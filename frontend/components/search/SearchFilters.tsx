@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,31 +9,32 @@ import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { formatCurrency } from "@/lib/utils";
 import { FilterX } from "lucide-react";
-
-// Full list of Indian States and UTs
-const INDIAN_STATES = [
-    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
-    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
-    "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
-    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
-    "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
-    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh",
-    "Lakshadweep", "Puducherry"
-];
-
-const SPECIALIZATIONS = ['Criminal', 'Civil', 'Family', 'Corporate', 'Property', 'Cyber Crime', 'Labor Law', 'Intellectual Property'];
+import { INDIAN_STATES_AND_DISTRICTS, SPECIALIZATIONS } from "@/lib/constants";
 
 export default function SearchFilters() {
-    // Local state for UI interactivity (Clear button demo)
+    // Local state
     const [selectedState, setSelectedState] = useState<string>("");
+    const [selectedDistrict, setSelectedDistrict] = useState<string>("");
     const [priceRange, setPriceRange] = useState([2000]);
     const [selectedSpecs, setSelectedSpecs] = useState<string[]>([]);
 
+    // Derived state for districts
+    const districts = useMemo(() => {
+        if (!selectedState) return [];
+        return INDIAN_STATES_AND_DISTRICTS[selectedState] || [];
+    }, [selectedState]);
+
     const handleClear = () => {
         setSelectedState("");
+        setSelectedDistrict("");
         setPriceRange([2000]);
         setSelectedSpecs([]);
-        console.log("Filters cleared");
+    };
+
+    // Handle state change (reset district)
+    const handleStateChange = (value: string) => {
+        setSelectedState(value);
+        setSelectedDistrict(""); // Reset district when state changes
     };
 
     return (
@@ -53,22 +54,36 @@ export default function SearchFilters() {
             {/* Location Filter */}
             <div className="space-y-3">
                 <Label>Location</Label>
-                <Select value={selectedState} onValueChange={setSelectedState}>
+
+                {/* State Select */}
+                <Select value={selectedState} onValueChange={handleStateChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select State" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[200px]">
-                        {INDIAN_STATES.map((state) => (
-                            <SelectItem key={state} value={state.toLowerCase()}>{state}</SelectItem>
+                        {Object.keys(INDIAN_STATES_AND_DISTRICTS).map((state) => (
+                            <SelectItem key={state} value={state} className="capitalize">
+                                {state}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-                <Select disabled>
+
+                {/* District Select */}
+                <Select
+                    value={selectedDistrict}
+                    onValueChange={setSelectedDistrict}
+                    disabled={!selectedState || districts.length === 0}
+                >
                     <SelectTrigger>
                         <SelectValue placeholder="Select District" />
                     </SelectTrigger>
-                    <SelectContent>
-                        {/* Dynamic Districts would go here */}
+                    <SelectContent className="max-h-[200px]">
+                        {districts.map((district) => (
+                            <SelectItem key={district} value={district}>
+                                {district}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
@@ -79,7 +94,7 @@ export default function SearchFilters() {
                 <AccordionItem value="spec">
                     <AccordionTrigger>Specialization</AccordionTrigger>
                     <AccordionContent>
-                        <div className="space-y-2">
+                        <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                             {SPECIALIZATIONS.map((spec) => (
                                 <div key={spec} className="flex items-center space-x-2">
                                     <Checkbox
@@ -90,7 +105,7 @@ export default function SearchFilters() {
                                             else setSelectedSpecs(selectedSpecs.filter(s => s !== spec));
                                         }}
                                     />
-                                    <Label htmlFor={spec} className="font-normal cursor-pointer">{spec}</Label>
+                                    <Label htmlFor={spec} className="font-normal cursor-pointer leading-tight py-1">{spec}</Label>
                                 </div>
                             ))}
                         </div>
