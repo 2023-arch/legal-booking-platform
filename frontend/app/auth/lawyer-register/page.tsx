@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Icons } from "@/components/ui/icons"
 import { Scale, ChevronRight, ChevronLeft, Upload, FileCheck, CheckCircle2 } from "lucide-react"
 
 // Schema for all steps
