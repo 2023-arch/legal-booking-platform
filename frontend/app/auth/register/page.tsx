@@ -34,9 +34,7 @@ const formSchema = z.object({
     phone: z.string().min(10, {
         message: "Please enter a valid phone number.",
     }),
-    role: z.enum(["user", "lawyer"], {
-        required_error: "Please select a role.",
-    })
+    role: z.enum(["user", "lawyer"])
 })
 
 export default function RegisterPage() {
