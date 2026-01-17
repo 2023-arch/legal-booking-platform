@@ -111,30 +111,22 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-            <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
-                <div className="absolute inset-0 bg-slate-900" />
-                <div className="relative z-20 flex items-center text-lg font-medium">
-                    <Scale className="mr-2 h-6 w-6" />
-                    LegalBook Inc
-                </div>
-                <div className="relative z-20 mt-auto">
-                    <blockquote className="space-y-2">
-                        <p className="text-lg">
-                            &ldquo;Join thousands of verified lawyers and clients connecting every day.&rdquo;
-                        </p>
-                    </blockquote>
-                </div>
-            </div>
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center relative overflow-hidden bg-slate-50 py-12">
+            {/* Background Decorations */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/50 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-100/50 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="p-8">
-                <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-                    <div className="flex flex-col space-y-2 text-center">
-                        <h1 className="text-2xl font-semibold tracking-tight">
+            <div className="w-full max-w-lg px-4 relative z-10">
+                <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 sm:p-10">
+                    <div className="flex flex-col space-y-2 text-center mb-8">
+                        <div className="mx-auto bg-blue-600 p-2 rounded-xl mb-4 w-fit">
+                            <Scale className="h-6 w-6 text-white" />
+                        </div>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
                             Create an account
                         </h1>
-                        <p className="text-sm text-muted-foreground">
-                            Enter your information below to create your account
+                        <p className="text-sm text-slate-500">
+                            Join thousands of verified lawyers and clients
                         </p>
                     </div>
 
@@ -147,7 +139,7 @@ export default function RegisterPage() {
                                     <FormItem>
                                         <FormLabel>Full Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="John Doe" {...field} />
+                                            <Input placeholder="John Doe" className="h-11" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -160,7 +152,7 @@ export default function RegisterPage() {
                                     <FormItem>
                                         <FormLabel>Email</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="name@example.com" {...field} />
+                                            <Input placeholder="name@example.com" className="h-11" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -173,7 +165,7 @@ export default function RegisterPage() {
                                     <FormItem>
                                         <FormLabel>Phone Number</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="+91 9876543210" {...field} />
+                                            <Input placeholder="+91 9876543210" className="h-11" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -186,7 +178,7 @@ export default function RegisterPage() {
                                     <FormItem>
                                         <FormLabel>Password</FormLabel>
                                         <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
+                                            <Input type="password" placeholder="••••••••" className="h-11" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -197,11 +189,11 @@ export default function RegisterPage() {
                                 control={form.control}
                                 name="role"
                                 render={({ field }) => (
-                                    <FormItem className="space-y-3">
+                                    <FormItem className="space-y-3 pt-2">
                                         <FormLabel>I am a...</FormLabel>
                                         <FormControl>
-                                            <div className="flex gap-4">
-                                                <label className={`flex-1 border rounded-lg p-3 text-center cursor-pointer transition-colors ${field.value === 'user' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'hover:bg-slate-50'}`}>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <label className={`border rounded-xl p-4 text-center cursor-pointer transition-all ${field.value === 'user' ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'hover:bg-slate-50 border-slate-200'}`}>
                                                     <input
                                                         type="radio"
                                                         className="hidden"
@@ -209,10 +201,10 @@ export default function RegisterPage() {
                                                         value="user"
                                                         checked={field.value === 'user'}
                                                     />
-                                                    <span className="font-semibold block">Client</span>
-                                                    <span className="text-xs text-slate-500">I need legal help</span>
+                                                    <span className={`font-semibold block mb-1 ${field.value === 'user' ? 'text-blue-700' : 'text-slate-900'}`}>Client</span>
+                                                    <span className="text-xs text-slate-500 block">I need legal help</span>
                                                 </label>
-                                                <label className={`flex-1 border rounded-lg p-3 text-center cursor-pointer transition-colors ${field.value === 'lawyer' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'hover:bg-slate-50'}`}>
+                                                <label className={`border rounded-xl p-4 text-center cursor-pointer transition-all ${field.value === 'lawyer' ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'hover:bg-slate-50 border-slate-200'}`}>
                                                     <input
                                                         type="radio"
                                                         className="hidden"
@@ -220,8 +212,8 @@ export default function RegisterPage() {
                                                         value="lawyer"
                                                         checked={field.value === 'lawyer'}
                                                     />
-                                                    <span className="font-semibold block">Lawyer</span>
-                                                    <span className="text-xs text-slate-500">I offer legal services</span>
+                                                    <span className={`font-semibold block mb-1 ${field.value === 'lawyer' ? 'text-blue-700' : 'text-slate-900'}`}>Lawyer</span>
+                                                    <span className="text-xs text-slate-500 block">I offer legal services</span>
                                                 </label>
                                             </div>
                                         </FormControl>
@@ -230,24 +222,31 @@ export default function RegisterPage() {
                                 )}
                             />
 
-                            <Button type="submit" className="w-full bg-slate-900" disabled={isLoading}>
+                            <Button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 h-12 text-base mt-2" disabled={isLoading}>
                                 {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
                                 Create Account
                             </Button>
                         </form>
                     </Form>
 
-                    <p className="px-8 text-center text-sm text-muted-foreground">
+                    <p className="px-8 text-center text-sm text-slate-500 mt-6">
                         By clicking continue, you agree to our{" "}
-                        <Link href="/terms" className="underline underline-offset-4 hover:text-primary">
+                        <Link href="/terms" className="underline underline-offset-4 hover:text-blue-600">
                             Terms
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="underline underline-offset-4 hover:text-primary">
+                        <Link href="/privacy" className="underline underline-offset-4 hover:text-blue-600">
                             Privacy Policy
                         </Link>
                     </p>
                 </div>
+
+                <p className="text-center text-sm text-slate-500 mt-8">
+                    Already have an account?{" "}
+                    <Link href="/auth/login" className="font-semibold text-blue-600 hover:text-blue-500 underline-offset-4 hover:underline">
+                        Sign in
+                    </Link>
+                </p>
             </div>
         </div>
     )
