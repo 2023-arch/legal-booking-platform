@@ -61,4 +61,29 @@ export const authAPI = {
     }
 };
 
+export const bookingsAPI = {
+    createDraft: async (data: any) => {
+        const response = await api.post('/bookings/create', data);
+        return response.data;
+    },
+    confirmBooking: async (draftId: string) => {
+        const response = await api.post(`/bookings/confirm?booking_draft_id=${draftId}`);
+        return response.data;
+    },
+    getBookings: async (params?: any) => {
+        const response = await api.get('/bookings/', { params });
+        return response.data;
+    },
+    getBookingById: async (id: string) => {
+        const response = await api.get(`/bookings/${id}`);
+        return response.data;
+    },
+    updateStatus: async (id: string, status: string, reason?: string) => {
+        const response = await api.patch(`/bookings/${id}/status`, null, {
+            params: { status_in: status, reason }
+        });
+        return response.data;
+    }
+};
+
 export default api;
