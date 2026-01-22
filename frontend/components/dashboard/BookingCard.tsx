@@ -92,7 +92,10 @@ export default function BookingCard({
                         </>
                     )}
                     {status === 'completed' && (
-                        <Button variant="outline" size="sm">View Invoice</Button>
+                        <>
+                            <Button variant="outline" size="sm">View Invoice</Button>
+                            <Button variant="secondary" size="sm">Review</Button>
+                        </>
                     )}
 
                     <DropdownMenu>

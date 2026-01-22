@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import BookingModal from "@/components/booking/BookingModal"; // Existing modal
+
 
 interface LawyerCardProps {
     id: string;
@@ -113,16 +113,11 @@ export default function LawyerCard({
                 </Link>
                 <div className="flex-1">
                     {/* Using existing BookingModal, passing minimal props logic */}
-                    <BookingModal
-                        lawyerId={id}
-                        lawyerName={name}
-                        consultationFee={price}
-                        trigger={
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                                Book Now
-                            </Button>
-                        }
-                    />
+                    <Link href={`/booking/create?lawyer_id=${id}`} className="w-full">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                            Book Now
+                        </Button>
+                    </Link>
                 </div>
             </CardFooter>
         </Card>
