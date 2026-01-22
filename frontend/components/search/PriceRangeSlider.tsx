@@ -8,7 +8,7 @@ interface PriceRangeSliderProps {
     min: number;
     max: number;
     step?: number;
-    defaultValue?: [number, number];
+    value?: [number, number];
     onValueChange: (value: [number, number]) => void;
 }
 
@@ -16,14 +16,21 @@ export default function PriceRangeSlider({
     min,
     max,
     step = 500,
-    defaultValue = [min, max],
+    value,
     onValueChange
 }: PriceRangeSliderProps) {
-    const [range, setRange] = useState<[number, number]>(defaultValue);
+    const [localRange, setLocalRange] = useState<[number, number]>(value || [min, max]);
+
+    // Sync with external value if it changes
+    useEffect(() => {
+        if (value) {
+            setLocalRange(value);
+        }
+    }, [value]);
 
     const handleChange = (newRange: number[]) => {
         const val = newRange as [number, number];
-        setRange(val);
+        setLocalRange(val);
         onValueChange(val);
     };
 
@@ -32,15 +39,14 @@ export default function PriceRangeSlider({
             <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-slate-700">Consultation Fee</Label>
                 <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                    ₹{range[0].toLocaleString()} - ₹{range[1].toLocaleString()}
+                    ₹{localRange[0].toLocaleString()} - ₹{localRange[1].toLocaleString()}
                 </span>
             </div>
             <Slider
-                defaultValue={defaultValue}
                 min={min}
                 max={max}
                 step={step}
-                value={range}
+                value={localRange}
                 onValueChange={handleChange}
                 className="py-4"
             />

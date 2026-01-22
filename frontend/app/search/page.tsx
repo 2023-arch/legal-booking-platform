@@ -1,29 +1,113 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import SearchFilters from "@/components/search/SearchFilters";
 import LawyerCard from "@/components/lawyer/LawyerCard";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Filter } from "lucide-react";
-
-// Mock Data
-const MOCK_LAWYERS = Array(8).fill(null).map((_, i) => ({
-    id: `lawyer-${i}`,
-    name: `Adv. Name ${i + 1}`,
-    specialization: ["Criminal Law", "Divorce", "Property", "Corporate"][i % 4],
-    location: ["Delhi", "Mumbai", "Bangalore", "Chennai"][i % 4],
-    experience: 5 + (i * 2),
-    rating: 4.0 + (i * 0.1),
-    reviewCount: 10 + (i * 5),
-    languages: ["English", "Hindi"],
-    price: 1000 + (i * 500),
-    verified: true,
-}));
+import { Skeleton } from "@/components/ui/skeleton";
+import api from "@/lib/api";
 
 function SearchContent() {
+    return <SearchFilters />;
+}
+
+// Separate component for Results to handle SearchParams cleanly
+function SearchResults() {
+    const searchParams = useSearchParams();
+    const [lawyers, setLawyers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [total, setTotal] = useState(0);
+
+    useEffect(() => {
+        async function fetchLawyers() {
+            setLoading(true);
+            try {
+                // Convert searchParams to API params object
+                const params: any = {};
+                searchParams.forEach((value, key) => {
+                    params[key] = value;
+                });
+
+                const { data } = await api.searchLawyers(params);
+                if (data && data.success) {
+                    setLawyers(data.data);
+                    setTotal(data.data.length || 0); // Pagination support to be added if API supports 'total' meta
+                } else {
+                    setLawyers([]);
+                }
+            } catch (error) {
+                console.error("Search failed:", error);
+                setLawyers([]);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchLawyers();
+    }, [searchParams]);
+
+    if (loading) {
+        return (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="h-[300px] border border-slate-200 rounded-lg p-4 space-y-4">
+                        <div className="flex gap-4">
+                            <Skeleton className="h-16 w-16 rounded-full" />
+                            <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-3 w-1/2" />
+                            </div>
+                        </div>
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <div className="pt-4 border-t border-slate-100 flex justify-between">
+                            <Skeleton className="h-8 w-24" />
+                            <Skeleton className="h-8 w-24" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
     return (
-        <SearchFilters />
+        <>
+            <div className="mb-6 flex justify-between items-center">
+                <h1 className="text-xl font-bold text-slate-900">
+                    {lawyers.length > 0 ? `Showing ${lawyers.length} Lawyers` : 'No lawyers found'}
+                </h1>
+            </div>
+
+            {lawyers.length > 0 ? (
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {lawyers.map((lawyer) => (
+                        <LawyerCard
+                            key={lawyer.id || lawyer._id}
+                            // Map API props to LawyerCard props if needed
+                            id={lawyer.id || lawyer._id}
+                            name={lawyer.name || lawyer.full_name}
+                            image={lawyer.profile_image}
+                            specialization={lawyer.specialization?.name || lawyer.specialization || "Legal Expert"}
+                            location={`${lawyer.city || 'India'}, ${lawyer.state || ''}`}
+                            experience={lawyer.years_experience || 0}
+                            rating={lawyer.average_rating || 0}
+                            reviewCount={lawyer.total_reviews || 0}
+                            languages={lawyer.languages || ["English"]}
+                            price={lawyer.consultation_fee || 0}
+                            verified={lawyer.is_verified}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-20 bg-white rounded-xl border border-slate-200">
+                    <h3 className="text-lg font-semibold text-slate-900">No lawyers found</h3>
+                    <p className="text-slate-500">Try adjusting your filters to find more results.</p>
+                </div>
+            )}
+        </>
     );
 }
 
@@ -50,7 +134,7 @@ export default function SearchPage() {
                             <SheetTrigger asChild>
                                 <Button variant="outline" className="w-full justify-between">
                                     <span className="flex items-center gap-2"><Filter className="h-4 w-4" /> Filters</span>
-                                    <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">3 Applied</span>
+                                    <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">Refine</span>
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="left" className="w-[300px] sm:w-[540px] overflow-y-auto">
@@ -65,21 +149,9 @@ export default function SearchPage() {
 
                     {/* Results Grid */}
                     <main className="flex-1">
-                        <div className="mb-6 flex justify-between items-center">
-                            <h1 className="text-xl font-bold text-slate-900">Showning {MOCK_LAWYERS.length} Lawyers</h1>
-                            {/* Sort Dropdown could go here */}
-                        </div>
-
-                        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {MOCK_LAWYERS.map((lawyer) => (
-                                <LawyerCard key={lawyer.id} {...lawyer} />
-                            ))}
-                        </div>
-
-                        {/* Pagination Placeholder */}
-                        <div className="mt-12 flex justify-center">
-                            <Button variant="outline" className="mx-auto">Load More Lawyers</Button>
-                        </div>
+                        <Suspense fallback={<div>Loading results...</div>}>
+                            <SearchResults />
+                        </Suspense>
                     </main>
                 </div>
             </div>

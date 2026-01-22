@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { bookingsAPI } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 
 interface BookingModalProps {
     lawyerId: string;
@@ -24,6 +25,7 @@ export default function BookingModal({ lawyerId, lawyerName, consultationFee, tr
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    const { toast } = useToast();
 
     // Form State
     const [description, setDescription] = useState("");
@@ -52,7 +54,13 @@ export default function BookingModal({ lawyerId, lawyerName, consultationFee, tr
             setStep('summary');
         } catch (err: any) {
             console.error(err);
-            setError(err.response?.data?.detail || "Failed to generate summary. Please try again.");
+            const msg = err.response?.data?.detail || "Failed to generate summary. Please try again.";
+            setError(msg);
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: msg
+            });
         } finally {
             setIsLoading(false);
         }
@@ -73,7 +81,13 @@ export default function BookingModal({ lawyerId, lawyerName, consultationFee, tr
             setStep('success');
         } catch (err: any) {
             console.error(err);
-            setError(err.response?.data?.detail || "Payment initiation failed.");
+            const msg = err.response?.data?.detail || "Payment initiation failed.";
+            setError(msg);
+            toast({
+                variant: 'destructive',
+                title: "Payment Error",
+                description: msg
+            });
         } finally {
             setIsLoading(false);
         }

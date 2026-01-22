@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
-import { authAPI } from "@/lib/api"
+import { useAuth } from "@/contexts/AuthContext" // Using Auth Context
 import {
     Form,
     FormControl,
@@ -32,6 +32,7 @@ const formSchema = z.object({
 
 export default function LoginPage() {
     const router = useRouter()
+    const { login } = useAuth(); // Hook
     const [isLoading, setIsLoading] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -45,32 +46,11 @@ export default function LoginPage() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true)
         try {
-            const data = await authAPI.login(values);
-
-            // Store tokens
-            localStorage.setItem('access_token', data.access_token);
-            localStorage.setItem('refresh_token', data.refresh_token);
-
-            // Set cookie for Middleware (expires in 1 day)
-            document.cookie = `token=${data.access_token}; path=/; max-age=86400; SameSite=Strict`;
-
-            // Redirect logic
-            try {
-                const user = await authAPI.getCurrentUser();
-                if (user.user_type === 'lawyer') {
-                    router.push('/dashboard/lawyer');
-                } else if (user.is_superuser) {
-                    router.push('/admin');
-                } else {
-                    router.push('/dashboard');
-                }
-            } catch (e) {
-                router.push('/dashboard'); // Fallback
-            }
-
+            await login(values.email, values.password);
+            // Redirect is handled inside login() now
         } catch (error: any) {
             console.error("Login failed:", error);
-            alert(error.response?.data?.detail || "Login failed. Please check your credentials.");
+            alert(error.message || "Login failed. Please check your credentials.");
         } finally {
             setIsLoading(false)
         }

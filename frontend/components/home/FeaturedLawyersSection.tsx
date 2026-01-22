@@ -1,142 +1,144 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import LawyerCard from "@/components/lawyer/LawyerCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import api from "@/lib/api";
 import Link from "next/link";
-import { ArrowRight, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight } from "lucide-react";
 
-// Mock data for featured lawyers
-const featuredLawyers = [
+// Fallback demo data
+const DEMO_LAWYERS = [
     {
-        id: "1",
+        id: "demo-1",
         name: "Adv. Priya Sharma",
         specialization: "Corporate Law",
-        experience: "12 years",
+        location: "Mumbai, MH",
+        experience: 12,
         rating: 4.9,
-        reviews: 124,
-        fee: 2500,
-        location: "High Court, Delhi",
+        reviewCount: 120,
         languages: ["English", "Hindi"],
+        price: 2500,
+        verified: true,
+        image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200",
     },
     {
-        id: "2",
-        name: "Adv. Rajesh Kumar",
+        id: "demo-2",
+        name: "Adv. Rajesh Verma",
         specialization: "Criminal Defense",
-        experience: "15 years",
+        location: "Delhi, DL",
+        experience: 15,
         rating: 4.8,
-        reviews: 98,
-        fee: 1500,
-        location: "District Court, Mumbai",
-        languages: ["English", "Marathi"],
+        reviewCount: 85,
+        languages: ["Hindi", "English", "Punjabi"],
+        price: 1800,
+        verified: true,
+        image: "https://images.unsplash.com/photo-1556157382-97eda2d622ca?auto=format&fit=crop&q=80&w=200",
     },
     {
-        id: "3",
-        name: "Adv. Anita Desai",
+        id: "demo-3",
+        name: "Adv. Anjali Gupta",
         specialization: "Family Law",
-        experience: "8 years",
-        rating: 4.9,
-        reviews: 156,
-        fee: 2000,
-        location: "High Court, Bangalore",
+        location: "Bangalore, KA",
+        experience: 8,
+        rating: 4.7,
+        reviewCount: 92,
         languages: ["English", "Kannada"],
+        price: 1500,
+        verified: true,
+        image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200",
     },
 ];
 
 export default function FeaturedLawyersSection() {
+    const [lawyers, setLawyers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchFeaturedLawyers() {
+            try {
+                const { data } = await api.getFeaturedLawyers(3);
+                if (data && data.data && data.data.length > 0) {
+                    // Transform API data to match LawyerCard props if necessary
+                    // Assuming API returns data compatible or we map it here
+                    const mappedLawyers = data.data.map((l: any) => ({
+                        id: l._id || l.id,
+                        name: l.name,
+                        specialization: l.specialization?.name || l.specialization || "Legal Expert",
+                        location: l.city || "India",
+                        experience: l.years_experience || 5,
+                        rating: l.average_rating || 5.0,
+                        reviewCount: l.total_reviews || 0,
+                        languages: l.languages || ["English"],
+                        price: l.consultation_fee || 1000,
+                        verified: l.is_verified,
+                        image: l.profile_image,
+                    }));
+                    setLawyers(mappedLawyers);
+                } else {
+                    // No lawyers returned, use demo
+                    setLawyers(DEMO_LAWYERS);
+                }
+            } catch (err: any) {
+                console.error("Failed to fetch lawyers, using demo data:", err);
+                setError(err.message);
+                setLawyers(DEMO_LAWYERS);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchFeaturedLawyers();
+    }, []);
+
+    if (loading) {
+        return (
+            <section className="py-16 bg-white">
+                <div className="container mx-auto px-4">
+                    <div className="flex justify-between items-end mb-10">
+                        <div>
+                            <Skeleton className="h-8 w-64 mb-2" />
+                            <Skeleton className="h-4 w-96" />
+                        </div>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-[300px] rounded-lg border border-slate-200 p-4 space-y-4">
+                                <Skeleton className="h-20 w-20 rounded-full" />
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-4 w-1/2" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
     return (
-        <section className="py-24 bg-slate-50">
+        <section className="py-16 bg-white">
             <div className="container mx-auto px-4">
-                <div className="flex justify-between items-end mb-12">
+                <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
                     <div>
-                        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                            Top Rated Lawyers
-                        </h2>
-                        <p className="text-lg text-slate-600">
-                            Expert legal professionals with proven track records.
+                        <h2 className="text-3xl font-bold text-slate-900 mb-2">Top Rated Lawyers</h2>
+                        <p className="text-slate-500 max-w-2xl">
+                            Connect with verified legal experts who have a proven track record of success.
                         </p>
                     </div>
-                    <Link href="/search" className="hidden sm:block">
-                        <Button
-                            variant="ghost"
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                            View All Lawyers <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    </Link>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-8">
-                    {featuredLawyers.map((lawyer) => (
-                        <Card
-                            key={lawyer.id}
-                            className="border-none shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
-                        >
-                            <div className="h-48 bg-slate-200 relative mb-4">
-                                {/* Placeholder for lawyer image - using colored avatars for now */}
-                                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
-                                    <span className="text-4xl text-slate-400 font-bold">
-                                        {lawyer.name.charAt(0)}
-                                    </span>
-                                </div>
-                                <Badge className="absolute top-4 right-4 bg-white/90 text-slate-900 shadow-sm hover:bg-white backdrop-blur">
-                                    <Star className="h-3 w-3 text-yellow-500 mr-1 fill-yellow-500" />{" "}
-                                    {lawyer.rating}
-                                </Badge>
-                            </div>
-                            <CardContent className="p-6 pt-0">
-                                <div className="text-sm text-blue-600 font-semibold mb-2 uppercase tracking-wide">
-                                    {lawyer.specialization}
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">
-                                    {lawyer.name}
-                                </h3>
-                                <p className="text-slate-500 text-sm mb-4">
-                                    {lawyer.location} • {lawyer.experience} exp
-                                </p>
-
-                                <div className="flex flex-wrap gap-2 mb-6">
-                                    {lawyer.languages.map((lang) => (
-                                        <Badge
-                                            key={lang}
-                                            variant="secondary"
-                                            className="bg-slate-100 text-slate-600 font-normal hover:bg-slate-200"
-                                        >
-                                            {lang}
-                                        </Badge>
-                                    ))}
-                                </div>
-
-                                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                                    <div>
-                                        <div className="text-xs text-slate-500">
-                                            Consultation Fee
-                                        </div>
-                                        <div className="font-bold text-slate-900">
-                                            ₹{lawyer.fee.toLocaleString()}
-                                            <span className="text-xs font-normal text-slate-400">
-                                                /consult
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <Link href={`/lawyers/${lawyer.id}`}>
-                                        <Button
-                                            size="sm"
-                                            className="bg-slate-900 text-white hover:bg-slate-800"
-                                        >
-                                            View Profile
-                                        </Button>
-                                    </Link>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-
-                <div className="mt-8 text-center sm:hidden">
                     <Link href="/search">
-                        <Button className="w-full" variant="outline">View All Lawyers</Button>
+                        <span className="flex items-center text-blue-600 font-semibold hover:underline">
+                            View All Lawyers <ArrowRight className="h-4 w-4 ml-1" />
+                        </span>
                     </Link>
+                </div>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {lawyers.map((lawyer) => (
+                        <LawyerCard
+                            key={lawyer.id}
+                            {...lawyer}
+                        />
+                    ))}
                 </div>
             </div>
         </section>
