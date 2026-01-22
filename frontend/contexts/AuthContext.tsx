@@ -24,6 +24,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper functions for cookie management
+const setCookie = (name: string, value: string, days: number = 7) => {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+};
+
+const deleteCookie = (name: string) => {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
@@ -57,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Silent fail on initial load is expected if not logged in
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
+            deleteCookie('token');
             setUser(null);
         } finally {
             setLoading(false);
@@ -75,6 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             localStorage.setItem('access_token', accessToken);
             if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+
+            // Also set cookie for middleware authentication
+            setCookie('token', accessToken, 7);
 
             setUser(userData);
 
@@ -104,6 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (accessToken) {
                 localStorage.setItem('access_token', accessToken);
                 if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+                // Also set cookie for middleware authentication
+                setCookie('token', accessToken, 7);
                 // If registration auto-logs in, fetch user data
                 await checkAuth();
             }
@@ -121,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Ignore logout errors (e.g. token already invalid)
         } finally {
             localStorage.clear();
+            deleteCookie('token');
             setUser(null);
             router.push('/auth/login');
         }

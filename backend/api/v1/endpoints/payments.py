@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 import json
 import uuid
+import logging
+from datetime import datetime, timedelta
 
 from api import deps
 from core import payment as payment_core
@@ -13,11 +15,41 @@ from models.payment import Payment, Escrow
 from models.user import User
 from schemas.payment import PaymentVerify
 
-# Using Redis
-from redis import asyncio as aioredis
-
 router = APIRouter()
-redis = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+logger = logging.getLogger(__name__)
+
+# In-memory fallback cache when Redis is unavailable
+class InMemoryCache:
+    """Simple in-memory cache as fallback when Redis is unavailable"""
+    def __init__(self):
+        self._cache: dict = {}
+        self._expiry: dict = {}
+    
+    async def setex(self, key: str, seconds: int, value: str):
+        self._cache[key] = value
+        self._expiry[key] = datetime.utcnow() + timedelta(seconds=seconds)
+    
+    async def get(self, key: str) -> str | None:
+        if key not in self._cache:
+            return None
+        if datetime.utcnow() > self._expiry.get(key, datetime.max):
+            del self._cache[key]
+            del self._expiry[key]
+            return None
+        return self._cache[key]
+    
+    async def delete(self, key: str):
+        self._cache.pop(key, None)
+        self._expiry.pop(key, None)
+
+# Initialize Redis with in-memory fallback
+try:
+    from redis import asyncio as aioredis
+    redis = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+    logger.info("Redis connection initialized for payments")
+except Exception as e:
+    logger.warning(f"Redis unavailable ({e}), using in-memory cache fallback for payments")
+    redis = InMemoryCache()
 
 @router.post("/verify")
 async def verify_payment(

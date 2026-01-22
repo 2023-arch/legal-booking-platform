@@ -5,6 +5,7 @@ from sqlalchemy import select
 import uuid
 import json
 from datetime import datetime, timedelta
+import logging
 
 from api import deps
 from core import ai, payment as payment_core
@@ -16,13 +17,41 @@ from models.booking import Booking
 from schemas.booking import BookingCreate, BookingDraft, Booking as BookingSchema
 from schemas.payment import PaymentResponse
 
-# Using Redis for drafts (Mocking if Redis is not fully set up directly in code, but assuming dependency)
-from redis import asyncio as aioredis
-
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-# Redis connection
-redis = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+# In-memory fallback cache when Redis is unavailable
+class InMemoryCache:
+    """Simple in-memory cache as fallback when Redis is unavailable"""
+    def __init__(self):
+        self._cache: dict = {}
+        self._expiry: dict = {}
+    
+    async def setex(self, key: str, seconds: int, value: str):
+        self._cache[key] = value
+        self._expiry[key] = datetime.utcnow() + timedelta(seconds=seconds)
+    
+    async def get(self, key: str) -> str | None:
+        if key not in self._cache:
+            return None
+        if datetime.utcnow() > self._expiry.get(key, datetime.max):
+            del self._cache[key]
+            del self._expiry[key]
+            return None
+        return self._cache[key]
+    
+    async def delete(self, key: str):
+        self._cache.pop(key, None)
+        self._expiry.pop(key, None)
+
+# Initialize Redis with in-memory fallback
+try:
+    from redis import asyncio as aioredis
+    redis = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+    logger.info("Redis connection initialized")
+except Exception as e:
+    logger.warning(f"Redis unavailable ({e}), using in-memory cache fallback")
+    redis = InMemoryCache()
 
 @router.post("/create", response_model=BookingDraft)
 async def create_booking_draft(

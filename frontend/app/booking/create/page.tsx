@@ -142,12 +142,32 @@ function BookingCreateContent() {
                 booking_draft_id: draftId,
             });
 
-            // Initialize Razorpay
+            const orderId = data.data.razorpay_order_id;
+
+            // Check if this is a TEST MODE order (no real payment needed)
+            if (orderId && orderId.startsWith('order_TEST_')) {
+                console.log('[TEST MODE] Simulating payment for order:', orderId);
+
+                // Simulate successful payment verification
+                try {
+                    await api.post('/payments/verify', {
+                        razorpay_order_id: orderId,
+                        razorpay_payment_id: `pay_TEST_${Date.now()}`,
+                        razorpay_signature: 'test_signature',
+                    });
+                    router.push(`/dashboard/bookings`);
+                } catch (err) {
+                    setError('Payment verification failed');
+                }
+                return;
+            }
+
+            // Real Razorpay flow for production
             const options = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                 amount: data.data.amount,
                 currency: data.data.currency,
-                order_id: data.data.razorpay_order_id,
+                order_id: orderId,
                 name: 'LegalBook',
                 description: `Consultation with ${lawyer.name}`,
                 handler: async (response: any) => {
