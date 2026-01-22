@@ -101,7 +101,13 @@ class ApiClient {
     password: string;
     user_type: 'user' | 'lawyer';
   }) {
-    return this.post('/auth/register', userData);
+    return this.post('/auth/register', {
+      full_name: userData.name,
+      email: userData.email,
+      phone: userData.phone,
+      password: userData.password,
+      user_type: userData.user_type,
+    });
   }
 
   async login(email_or_phone: string, password: string) {

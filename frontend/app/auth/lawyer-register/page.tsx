@@ -94,6 +94,38 @@ export default function LawyerRegisterWizard() {
         console.log("Submitting Lawyer Application:", values)
 
         try {
+            // Step 1: First register the user account
+            const registerResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://legal-booking-platform.onrender.com/api/v1'}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    full_name: values.fullName,
+                    email: values.email,
+                    phone: values.phone,
+                    password: values.password,
+                    user_type: 'lawyer',
+                }),
+            });
+
+            if (!registerResponse.ok) {
+                const errorData = await registerResponse.json();
+                throw new Error(errorData.detail || 'User registration failed');
+            }
+
+            const registerData = await registerResponse.json();
+            const accessToken = registerData.access_token || registerData.data?.access_token;
+
+            if (!accessToken) {
+                throw new Error('No access token received');
+            }
+
+            // Store tokens
+            localStorage.setItem('access_token', accessToken);
+            if (registerData.refresh_token || registerData.data?.refresh_token) {
+                localStorage.setItem('refresh_token', registerData.refresh_token || registerData.data?.refresh_token);
+            }
+
+            // Step 2: Now register the lawyer profile
             const formData = new FormData();
 
             // Append Text Fields
@@ -104,20 +136,19 @@ export default function LawyerRegisterWizard() {
 
             // Append JSON Fields
             formData.append('languages', JSON.stringify(values.languages));
-            formData.append('specializations', JSON.stringify(values.specializations.map(s => ({ specialization_id: s })))); // Mock structure
-            formData.append('court_ids', JSON.stringify([values.courts])); // Mock structure: usually UUIDs
+            formData.append('specializations', JSON.stringify(values.specializations.map(s => ({ specialization_id: s }))));
+            formData.append('court_ids', JSON.stringify([values.courts]));
 
             // Append Files
             if (values.barCertificate) formData.append('bar_council_certificate', values.barCertificate);
             if (values.idProof) formData.append('id_proof', values.idProof);
-            // formData.append('profile_photo', ...); 
 
             await authAPI.registerLawyer(formData);
 
             setIsSubmitted(true);
         } catch (error: any) {
             console.error("Submission failed:", error);
-            alert(error.response?.data?.detail || "Failed to submit application.");
+            alert(error.message || error.response?.data?.detail || "Failed to submit application.");
         } finally {
             setIsLoading(false)
         }
