@@ -55,12 +55,19 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # 4. CORS (outermost - handles preflight requests BEFORE other middleware)
-# CRITICAL: CORS must handle OPTIONS preflight requests properly
-cors_origins = [str(origin) for origin in settings.BACKEND_CORS_ORIGINS] if settings.BACKEND_CORS_ORIGINS else ["*"]
+# CRITICAL: allow_credentials=True cannot be used with allow_origins=["*"]
+if settings.BACKEND_CORS_ORIGINS:
+    cors_origins = [str(origin) for origin in settings.BACKEND_CORS_ORIGINS]
+    allow_creds = True
+else:
+    # Fallback to wildcard - must disable credentials
+    cors_origins = ["*"]
+    allow_creds = False
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_credentials=True,
+    allow_credentials=allow_creds,
     allow_methods=["*"],  # Allow all methods including OPTIONS
     allow_headers=["*"],  # Allow all headers to avoid preflight issues
     expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
