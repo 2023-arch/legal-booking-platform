@@ -74,19 +74,38 @@ async def register_lawyer(
     await db.commit()
     await db.refresh(lawyer)
 
-    # Add Courts
+    # Add Courts (skip invalid UUIDs - frontend may send names instead of UUIDs)
     for c_id in court_ids_list:
-        lc = LawyerCourt(lawyer_id=lawyer.id, court_id=c_id)
-        db.add(lc)
+        try:
+            # Validate it's a proper UUID before adding
+            import uuid as uuid_module
+            court_uuid = uuid_module.UUID(str(c_id)) if c_id else None
+            if court_uuid:
+                lc = LawyerCourt(lawyer_id=lawyer.id, court_id=court_uuid)
+                db.add(lc)
+        except (ValueError, AttributeError):
+            # Skip invalid UUIDs (frontend might send court names instead)
+            pass
 
-    # Add Specializations
+    # Add Specializations (skip invalid UUIDs - frontend may send names instead of UUIDs)
     for s in specs_list:
-        ls = LawyerSpecialization(
-            lawyer_id=lawyer.id, 
-            specialization_id=s['specialization_id'],
-            sub_specialization_id=s.get('sub_specialization_id')
-        )
-        db.add(ls)
+        try:
+            import uuid as uuid_module
+            spec_id = s.get('specialization_id')
+            spec_uuid = uuid_module.UUID(str(spec_id)) if spec_id else None
+            sub_spec_id = s.get('sub_specialization_id')
+            sub_spec_uuid = uuid_module.UUID(str(sub_spec_id)) if sub_spec_id else None
+            
+            if spec_uuid:
+                ls = LawyerSpecialization(
+                    lawyer_id=lawyer.id, 
+                    specialization_id=spec_uuid,
+                    sub_specialization_id=sub_spec_uuid
+                )
+                db.add(ls)
+        except (ValueError, AttributeError):
+            # Skip invalid UUIDs (frontend might send specialization names instead)
+            pass
     
     await db.commit()
     await db.refresh(lawyer)
