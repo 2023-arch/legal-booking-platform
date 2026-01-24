@@ -116,16 +116,8 @@ class ApiClient {
     // Let's support both but default to what the prompt suggested (JSON object) 
     // AND the FormData version from previous implementation just in case.
 
-    // Attempting JSON first as per new prompt
-    return this.post('/auth/login', { username: email_or_phone, password }, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      transformRequest: [(data: any) => {
-        const formData = new FormData();
-        formData.append('username', data.username);
-        formData.append('password', data.password);
-        return formData;
-      }]
-    });
+    // Using JSON endpoint for simpler integration
+    return this.post('/auth/login-json', { username: email_or_phone, password });
   }
 
   async verifyOTP(user_id: string, email_otp: string, phone_otp: string) {
