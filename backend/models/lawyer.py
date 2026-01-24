@@ -23,7 +23,7 @@ class Lawyer(Base):
     
     bar_council_certificate_url = Column(String, nullable=False)
     id_proof_url = Column(String, nullable=False)
-    profile_photo_url = Column(String, nullable=True)
+    profile_photo_url = Column(String, nullable=False)  # Required - visible to users on profile
     
     verified_at = Column(DateTime(timezone=True), nullable=True)
     verified_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)

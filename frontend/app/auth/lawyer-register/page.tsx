@@ -44,9 +44,10 @@ const wizardSchema = z.object({
     consultationFee: z.string().min(1, "Fee required"),
     languages: z.array(z.string()).min(1, "Select languages"),
 
-    // Step 4: Documents (Simulated)
-    barCertificate: z.any().optional(),
-    idProof: z.any().optional(),
+    // Step 4: Documents (All Required)
+    barCertificate: z.any().refine((file) => file, "Bar Council Certificate is required"),
+    idProof: z.any().refine((file) => file, "ID Proof is required"),
+    profilePhoto: z.any().refine((file) => file, "Profile Photo is required"),
 })
 
 const SPECIALIZATIONS = ["Criminal", "Civil", "Family", "Corporate", "Property", "Startup", "Cyber Crime", "Labor"]
@@ -139,9 +140,10 @@ export default function LawyerRegisterWizard() {
             formData.append('specializations', JSON.stringify(values.specializations.map(s => ({ specialization_id: s }))));
             formData.append('court_ids', JSON.stringify([values.courts]));
 
-            // Append Files
+            // Append Files (All Required)
             if (values.barCertificate) formData.append('bar_council_certificate', values.barCertificate);
             if (values.idProof) formData.append('id_proof', values.idProof);
+            if (values.profilePhoto) formData.append('profile_photo', values.profilePhoto);
 
             await authAPI.registerLawyer(formData);
 
@@ -411,10 +413,28 @@ export default function LawyerRegisterWizard() {
                                 {/* STEP 4: DOCS */}
                                 {step === 4 && (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                                        {/* Profile Photo - Prominently displayed first */}
+                                        <Card className="border-dashed border-2 border-blue-200 bg-blue-50">
+                                            <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                                                <Upload className="h-10 w-10 text-blue-500 mb-4" />
+                                                <h3 className="font-semibold text-lg text-blue-900">Professional Photo *</h3>
+                                                <p className="text-sm text-blue-600 mb-4">This photo will be visible to users on your profile</p>
+                                                <Input
+                                                    type="file"
+                                                    accept=".jpg,.jpeg,.png"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) form.setValue('profilePhoto', file);
+                                                    }}
+                                                    className="max-w-xs"
+                                                />
+                                            </CardContent>
+                                        </Card>
+
                                         <Card className="border-dashed border-2 bg-slate-50">
                                             <CardContent className="flex flex-col items-center justify-center py-10 text-center">
                                                 <FileCheck className="h-10 w-10 text-slate-400 mb-4" />
-                                                <h3 className="font-semibold text-lg">Bar Council Certificate</h3>
+                                                <h3 className="font-semibold text-lg">Bar Council Certificate *</h3>
                                                 <p className="text-sm text-slate-500 mb-4">Upload your clear scanned certificate (PDF/JPG)</p>
                                                 <Input
                                                     type="file"
@@ -431,7 +451,7 @@ export default function LawyerRegisterWizard() {
                                         <Card className="border-dashed border-2 bg-slate-50">
                                             <CardContent className="flex flex-col items-center justify-center py-10 text-center">
                                                 <FileCheck className="h-10 w-10 text-slate-400 mb-4" />
-                                                <h3 className="font-semibold text-lg">Identity Proof</h3>
+                                                <h3 className="font-semibold text-lg">Identity Proof *</h3>
                                                 <p className="text-sm text-slate-500 mb-4">Aadhaar Card or PAN Card (PDF/JPG)</p>
                                                 <Input
                                                     type="file"
@@ -444,6 +464,13 @@ export default function LawyerRegisterWizard() {
                                                 />
                                             </CardContent>
                                         </Card>
+
+                                        <div className="bg-amber-50 p-4 rounded-lg flex gap-3 text-amber-700 text-sm">
+                                            <div className="mt-0.5"><CheckCircle2 className="h-4 w-4" /></div>
+                                            <div>
+                                                <strong>All documents are mandatory</strong> and will be reviewed by our admin team for verification.
+                                            </div>
+                                        </div>
 
                                         <div className="bg-blue-50 p-4 rounded-lg flex gap-3 text-blue-700 text-sm">
                                             <div className="mt-0.5"><CheckCircle2 className="h-4 w-4" /></div>
