@@ -5,6 +5,7 @@ alembic
 asyncpg
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt
 python-multipart
 pydantic
 pydantic-settings
