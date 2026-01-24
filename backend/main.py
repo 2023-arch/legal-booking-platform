@@ -77,13 +77,13 @@ logger.info("Security middleware registered: RateLimit, SecurityHeaders, Request
 # ROUTES
 # =============================================================================
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def read_root():
     """Root endpoint - health check."""
     return {"message": f"Welcome to {settings.PROJECT_NAME} API"}
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     """Health check endpoint for monitoring."""
     return {"status": "healthy", "service": settings.PROJECT_NAME}

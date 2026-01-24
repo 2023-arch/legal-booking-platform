@@ -85,6 +85,8 @@ async def create_booking_draft(
         "ai_summary": ai_summary,
         "consultation_fee": lawyer.consultation_fee,
         "preferred_time": booking_in.preferred_time.isoformat() if booking_in.preferred_time else None,
+        "user_name": booking_in.user_name or current_user.full_name,  # Use provided name or fallback to user's name
+        "duration_minutes": booking_in.duration_minutes or 30,  # Default 30 minutes
         "expires_at": expires_at.isoformat()
     }
     

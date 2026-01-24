@@ -28,6 +28,10 @@ class Booking(Base):
     cancellation_reason = Column(Text, nullable=True)
     reschedule_count = Column(Integer, default=0)
     
+    # Booking details
+    user_name = Column(String(100), nullable=True)  # Name of the person booking
+    duration_minutes = Column(Integer, default=30, nullable=False)  # Consultation duration
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

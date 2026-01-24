@@ -49,6 +49,20 @@ class BookingBase(BaseModel):
         description="Preferred consultation time (must be in future)"
     )
     
+    # New fields for booking details
+    user_name: Optional[str] = Field(
+        None,
+        min_length=2,
+        max_length=100,
+        description="Name of the person booking (2-100 chars)"
+    )
+    duration_minutes: Optional[int] = Field(
+        30,
+        ge=15,
+        le=120,
+        description="Consultation duration in minutes (15-120)"
+    )
+    
     @field_validator('case_description')
     @classmethod
     def sanitize_description(cls, v):
@@ -71,6 +85,14 @@ class BookingBase(BaseModel):
         """Ensure preferred time is in the future."""
         if v and v < datetime.utcnow():
             raise ValueError("Preferred time must be in the future")
+        return v
+    
+    @field_validator('user_name')
+    @classmethod
+    def sanitize_user_name(cls, v):
+        """Sanitize user name to prevent XSS."""
+        if v:
+            return sanitize_html(v.strip())
         return v
 
 

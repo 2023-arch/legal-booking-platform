@@ -110,7 +110,9 @@ async def verify_payment(
         consultation_fee=consultation_fee,
         platform_commission=platform_commission,
         lawyer_payout=lawyer_payout,
-        scheduled_time=preferred_time
+        scheduled_time=preferred_time,
+        user_name=draft.get('user_name'),  # Name of the person booking
+        duration_minutes=draft.get('duration_minutes', 30)  # Duration of consultation
     )
     db.add(booking)
     
