@@ -54,24 +54,19 @@ app.add_middleware(RateLimitMiddleware)
 # 3. Security Headers
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 4. CORS (outermost - handles preflight requests)
-if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-        allow_credentials=True,
-        # Security: Restrict methods and headers in production
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=[
-            "Authorization",
-            "Content-Type",
-            "X-Requested-With",
-            "X-Request-ID",
-        ],
-        expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
-    )
+# 4. CORS (outermost - handles preflight requests BEFORE other middleware)
+# CRITICAL: CORS must handle OPTIONS preflight requests properly
+cors_origins = [str(origin) for origin in settings.BACKEND_CORS_ORIGINS] if settings.BACKEND_CORS_ORIGINS else ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods including OPTIONS
+    allow_headers=["*"],  # Allow all headers to avoid preflight issues
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
+)
 
-logger.info("Security middleware registered: RateLimit, SecurityHeaders, RequestLogging")
+logger.info(f"CORS enabled for origins: {cors_origins}")
 
 # =============================================================================
 # ROUTES
