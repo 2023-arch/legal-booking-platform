@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Legal Booking Platform"
-    API_V1_STR: str = "/api"
+    API_V1_STR: str = "/api/v1"  # Must match frontend expectation
     
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
