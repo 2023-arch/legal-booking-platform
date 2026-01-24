@@ -28,12 +28,15 @@ async def register_lawyer(
     consultation_fee: int = Form(...),
     court_ids: str = Form(...), # JSON string list of UUIDs
     specializations: str = Form(...), # JSON string list of objects
-    bar_council_certificate: UploadFile = File(None),  # Optional for testing
-    id_proof: UploadFile = File(None),  # Optional for testing
-    profile_photo: UploadFile = File(None)
+    bar_council_certificate: UploadFile = File(..., description="Bar Council Certificate (required for verification)"),
+    id_proof: UploadFile = File(..., description="ID Proof - Aadhaar/PAN (required for verification)"),
+    profile_photo: UploadFile = File(..., description="Professional photo for profile (visible to users)")
 ):
     """
     Register a new lawyer profile.
+    
+    All documents are MANDATORY and will be reviewed by admin for verification.
+    Profile photo will be visible to users on the lawyer's profile page.
     """
     # Check if user already has a lawyer profile
     query = select(Lawyer).where(Lawyer.user_id == current_user.id)
@@ -41,18 +44,10 @@ async def register_lawyer(
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Lawyer profile already exists")
 
-    # Upload files (only if provided)
-    cert_url = None
-    if bar_council_certificate:
-        cert_url = await storage.upload_file_to_s3(bar_council_certificate, f"lawyers/{current_user.id}/documents")
-    
-    id_proof_url = None
-    if id_proof:
-        id_proof_url = await storage.upload_file_to_s3(id_proof, f"lawyers/{current_user.id}/documents")
-    
-    photo_url = None
-    if profile_photo:
-        photo_url = await storage.upload_file_to_s3(profile_photo, f"lawyers/{current_user.id}/documents")
+    # Upload files (all mandatory)
+    cert_url = await storage.upload_file_to_s3(bar_council_certificate, f"lawyers/{current_user.id}/documents")
+    id_proof_url = await storage.upload_file_to_s3(id_proof, f"lawyers/{current_user.id}/documents")
+    photo_url = await storage.upload_file_to_s3(profile_photo, f"lawyers/{current_user.id}/profile")
 
     # Create Lawyer
     try:
