@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import {
     Scale, ArrowLeft, RefreshCw, CheckCircle, XCircle,
-    Clock, Eye, FileText, Phone, Mail, Shield, Calendar,
+    Clock, Eye, FileText, Phone, Mail, Shield,
     ExternalLink, AlertTriangle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -35,7 +34,8 @@ interface LawyerData {
     verified_at?: string
 }
 
-export default function AdminLawyersPage() {
+// Separate component that uses useSearchParams
+function AdminLawyersContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const statusFilter = searchParams.get('status') || 'pending'
@@ -106,7 +106,6 @@ export default function AdminLawyersPage() {
                 throw new Error(data.detail || 'Action failed')
             }
 
-            // Refresh the list
             await fetchLawyers()
             setSelectedLawyer(null)
             setShowRejectModal(false)
@@ -390,7 +389,7 @@ export default function AdminLawyersPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <p className="text-sm text-slate-400">
-                                Please provide a reason for rejecting <strong className="text-white">{selectedLawyer.full_name}</strong>'s application:
+                                Please provide a reason for rejecting <strong className="text-white">{selectedLawyer.full_name}</strong>&apos;s application:
                             </p>
                             <Textarea
                                 value={rejectionReason}
@@ -423,5 +422,26 @@ export default function AdminLawyersPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+// Loading fallback for Suspense
+function LoadingFallback() {
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="text-center">
+                <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-slate-400">Loading...</p>
+            </div>
+        </div>
+    )
+}
+
+// Main export wrapped in Suspense
+export default function AdminLawyersPage() {
+    return (
+        <Suspense fallback={<LoadingFallback />}>
+            <AdminLawyersContent />
+        </Suspense>
     )
 }
