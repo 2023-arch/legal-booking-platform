@@ -323,16 +323,21 @@ function AdminLawyersContent() {
                                                 </div>
                                             )}
                                             {selectedLawyer.id_proof_url ? (
-                                                <a
-                                                    href={selectedLawyer.id_proof_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-3 bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors"
-                                                >
-                                                    <FileText className="h-5 w-5 text-blue-500" />
-                                                    <span className="text-sm text-white">ID Proof</span>
-                                                    <ExternalLink className="h-4 w-4 text-slate-400 ml-auto" />
-                                                </a>
+                                                <div className="space-y-1">
+                                                    <a
+                                                        href={selectedLawyer.id_proof_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-3 bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors"
+                                                    >
+                                                        <FileText className="h-5 w-5 text-blue-500" />
+                                                        <span className="text-sm text-white">ID Proof</span>
+                                                        <ExternalLink className="h-4 w-4 text-slate-400 ml-auto" />
+                                                    </a>
+                                                    <p className="text-[10px] text-slate-500 font-mono break-all px-1">
+                                                        {selectedLawyer.id_proof_url}
+                                                    </p>
+                                                </div>
                                             ) : (
                                                 <div className="flex items-center gap-3 bg-slate-700/30 rounded-lg p-4 opacity-50">
                                                     <FileText className="h-5 w-5 text-slate-500" />
@@ -340,16 +345,21 @@ function AdminLawyersContent() {
                                                 </div>
                                             )}
                                             {selectedLawyer.profile_photo_url && (
-                                                <a
-                                                    href={selectedLawyer.profile_photo_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-3 bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors"
-                                                >
-                                                    <FileText className="h-5 w-5 text-green-500" />
-                                                    <span className="text-sm text-white">Profile Photo</span>
-                                                    <ExternalLink className="h-4 w-4 text-slate-400 ml-auto" />
-                                                </a>
+                                                <div className="space-y-1">
+                                                    <a
+                                                        href={selectedLawyer.profile_photo_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-3 bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors"
+                                                    >
+                                                        <FileText className="h-5 w-5 text-green-500" />
+                                                        <span className="text-sm text-white">Profile Photo Link</span>
+                                                        <ExternalLink className="h-4 w-4 text-slate-400 ml-auto" />
+                                                    </a>
+                                                    <p className="text-[10px] text-slate-500 font-mono break-all px-1">
+                                                        {selectedLawyer.profile_photo_url}
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
                                         {/* Debug: Show if Cloudinary URLs are missing */}
