@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     # Pinecone
     PINECONE_API_KEY: str = ""
     PINECONE_ENVIRONMENT: str = ""
+    
+    # Admin Panel (Company Credentials)
+    ADMIN_USERNAME: str = "legal_platform_admin"
+    ADMIN_PASSWORD: str = ""  # Set in environment variable
+    ADMIN_SECRET_KEY: str = ""  # Separate JWT secret for admin tokens
+    ADMIN_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour session
 
     class Config:
         case_sensitive = True

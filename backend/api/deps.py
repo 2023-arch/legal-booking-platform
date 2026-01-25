@@ -36,3 +36,14 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+from fastapi import Header
+from typing import Optional
+
+def get_authorization_header(
+    authorization: Optional[str] = Header(None, alias="Authorization")
+) -> Optional[str]:
+    """Extract Authorization header for admin authentication."""
+    return authorization
+
