@@ -346,7 +346,9 @@ async def get_all_users(
 ) -> Any:
     """Get all users with optional filters."""
     
-    query = select(User).order_by(User.created_at.desc())
+    # User model doesn't have created_at, so we can't sort by it
+    # We'll just select users without specific order for now (or by full_name)
+    query = select(User)
     
     if user_type:
         query = query.where(User.user_type == user_type)
@@ -380,7 +382,7 @@ async def get_all_users(
                 "user_type": u.user_type,
                 "is_active": u.is_active,
                 "is_verified": u.is_verified,
-                "created_at": u.created_at.isoformat() if u.created_at else None,
+                "created_at": getattr(u, 'created_at', None), # Safe access
             }
             for u in users
         ]
@@ -413,7 +415,7 @@ async def get_user_detail(
         "is_active": user.is_active,
         "is_verified": user.is_verified,
         "is_superuser": user.is_superuser,
-        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "created_at": getattr(user, 'created_at', None), # Safe access
         "lawyer_profile": {
             "id": str(lawyer.id),
             "bar_council_number": lawyer.bar_council_number,
