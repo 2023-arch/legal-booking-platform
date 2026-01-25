@@ -45,9 +45,9 @@ async def register_lawyer(
         raise HTTPException(status_code=400, detail="Lawyer profile already exists")
 
     # Upload files (all mandatory)
-    cert_url = await storage.upload_file_to_s3(bar_council_certificate, f"lawyers/{current_user.id}/documents")
-    id_proof_url = await storage.upload_file_to_s3(id_proof, f"lawyers/{current_user.id}/documents")
-    photo_url = await storage.upload_file_to_s3(profile_photo, f"lawyers/{current_user.id}/profile")
+    cert_url = await storage.upload_file(bar_council_certificate, f"lawyers/{current_user.id}/documents")
+    id_proof_url = await storage.upload_file(id_proof, f"lawyers/{current_user.id}/documents")
+    photo_url = await storage.upload_file(profile_photo, f"lawyers/{current_user.id}/profile")
 
     # Create Lawyer
     try:
