@@ -328,3 +328,395 @@ async def verify_lawyer(
         "lawyer_id": str(lawyer.id),
         "new_status": lawyer.verification_status
     }
+
+
+# =============================================================================
+# USERS MANAGEMENT ENDPOINTS
+# =============================================================================
+
+@router.get("/users")
+async def get_all_users(
+    user_type: Optional[str] = Query(None, regex="^(user|lawyer|admin)$"),
+    search: Optional[str] = None,
+    limit: int = Query(50, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(deps.get_db),
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Get all users with optional filters."""
+    
+    query = select(User).order_by(User.created_at.desc())
+    
+    if user_type:
+        query = query.where(User.user_type == user_type)
+    
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.where(
+            (User.email.ilike(search_pattern)) |
+            (User.full_name.ilike(search_pattern)) |
+            (User.phone.ilike(search_pattern))
+        )
+    
+    # Get total count
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    
+    # Apply pagination
+    query = query.offset(offset).limit(limit)
+    result = await db.execute(query)
+    users = result.scalars().all()
+    
+    return {
+        "total": total or 0,
+        "limit": limit,
+        "offset": offset,
+        "users": [
+            {
+                "id": str(u.id),
+                "email": u.email,
+                "full_name": u.full_name,
+                "phone": u.phone,
+                "user_type": u.user_type,
+                "is_active": u.is_active,
+                "is_verified": u.is_verified,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            }
+            for u in users
+        ]
+    }
+
+
+@router.get("/users/{user_id}")
+async def get_user_detail(
+    user_id: str,
+    db: AsyncSession = Depends(deps.get_db),
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Get detailed user information."""
+    
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get lawyer profile if exists
+    lawyer_query = select(Lawyer).where(Lawyer.user_id == user_id)
+    result = await db.execute(lawyer_query)
+    lawyer = result.scalar_one_or_none()
+    
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "full_name": user.full_name,
+        "phone": user.phone,
+        "user_type": user.user_type,
+        "is_active": user.is_active,
+        "is_verified": user.is_verified,
+        "is_superuser": user.is_superuser,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "lawyer_profile": {
+            "id": str(lawyer.id),
+            "bar_council_number": lawyer.bar_council_number,
+            "verification_status": lawyer.verification_status,
+        } if lawyer else None
+    }
+
+
+@router.post("/users/{user_id}/toggle-active")
+async def toggle_user_active(
+    user_id: str,
+    db: AsyncSession = Depends(deps.get_db),
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Activate or deactivate a user."""
+    
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_active = not user.is_active
+    await db.commit()
+    
+    return {
+        "success": True,
+        "user_id": str(user.id),
+        "is_active": user.is_active,
+        "message": f"User {'activated' if user.is_active else 'deactivated'}"
+    }
+
+
+# =============================================================================
+# BOOKINGS MANAGEMENT ENDPOINTS
+# =============================================================================
+
+# Import Booking model
+from models.booking import Booking
+from models.payment import Payment
+
+@router.get("/bookings")
+async def get_all_bookings(
+    status: Optional[str] = Query(None),
+    limit: int = Query(50, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(deps.get_db),
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Get all bookings with optional status filter."""
+    
+    query = select(Booking).order_by(Booking.created_at.desc())
+    
+    if status:
+        query = query.where(Booking.status == status)
+    
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    query = query.offset(offset).limit(limit)
+    
+    result = await db.execute(query)
+    bookings = result.scalars().all()
+    
+    bookings_list = []
+    for b in bookings:
+        # Get user and lawyer details
+        user = await db.get(User, b.user_id)
+        lawyer_query = select(Lawyer).where(Lawyer.id == b.lawyer_id)
+        lawyer_result = await db.execute(lawyer_query)
+        lawyer = lawyer_result.scalar_one_or_none()
+        lawyer_user = await db.get(User, lawyer.user_id) if lawyer else None
+        
+        bookings_list.append({
+            "id": str(b.id),
+            "user_name": user.full_name if user else "Unknown",
+            "user_email": user.email if user else "Unknown",
+            "lawyer_name": lawyer_user.full_name if lawyer_user else "Unknown",
+            "status": b.status,
+            "consultation_fee": b.consultation_fee,
+            "platform_commission": b.platform_commission,
+            "lawyer_payout": b.lawyer_payout,
+            "scheduled_time": b.scheduled_time.isoformat() if b.scheduled_time else None,
+            "created_at": b.created_at.isoformat() if b.created_at else None,
+        })
+    
+    return {
+        "total": total or 0,
+        "limit": limit,
+        "offset": offset,
+        "bookings": bookings_list
+    }
+
+
+@router.get("/bookings/{booking_id}")
+async def get_booking_detail(
+    booking_id: str,
+    db: AsyncSession = Depends(deps.get_db),
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Get detailed booking information."""
+    
+    booking = await db.get(Booking, booking_id)
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    user = await db.get(User, booking.user_id)
+    lawyer_query = select(Lawyer).where(Lawyer.id == booking.lawyer_id)
+    lawyer_result = await db.execute(lawyer_query)
+    lawyer = lawyer_result.scalar_one_or_none()
+    lawyer_user = await db.get(User, lawyer.user_id) if lawyer else None
+    
+    # Get payment info
+    payment_query = select(Payment).where(Payment.booking_id == booking_id)
+    payment_result = await db.execute(payment_query)
+    payment = payment_result.scalar_one_or_none()
+    
+    return {
+        "id": str(booking.id),
+        "user": {
+            "id": str(user.id) if user else None,
+            "name": user.full_name if user else "Unknown",
+            "email": user.email if user else "Unknown",
+            "phone": user.phone if user else None,
+        },
+        "lawyer": {
+            "id": str(lawyer.id) if lawyer else None,
+            "name": lawyer_user.full_name if lawyer_user else "Unknown",
+            "email": lawyer_user.email if lawyer_user else "Unknown",
+        },
+        "status": booking.status,
+        "original_description": booking.original_description,
+        "ai_summary": booking.ai_summary,
+        "consultation_fee": booking.consultation_fee,
+        "platform_commission": booking.platform_commission,
+        "lawyer_payout": booking.lawyer_payout,
+        "scheduled_time": booking.scheduled_time.isoformat() if booking.scheduled_time else None,
+        "completed_at": booking.completed_at.isoformat() if booking.completed_at else None,
+        "cancellation_reason": booking.cancellation_reason,
+        "created_at": booking.created_at.isoformat() if booking.created_at else None,
+        "payment": {
+            "id": str(payment.id) if payment else None,
+            "status": payment.status if payment else None,
+            "amount": payment.amount if payment else None,
+            "razorpay_order_id": payment.razorpay_order_id if payment else None,
+            "razorpay_payment_id": payment.razorpay_payment_id if payment else None,
+        } if payment else None
+    }
+
+
+@router.post("/bookings/{booking_id}/refund")
+async def refund_booking(
+    booking_id: str,
+    reason: str = Query(..., min_length=5),
+    db: AsyncSession = Depends(deps.get_db),
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Issue a refund for a booking (admin action)."""
+    
+    booking = await db.get(Booking, booking_id)
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if booking.status in ["refunded", "completed"]:
+        raise HTTPException(status_code=400, detail=f"Cannot refund a {booking.status} booking")
+    
+    # Update booking status
+    booking.status = "cancelled"
+    booking.cancellation_reason = f"[Admin Refund] {reason}"
+    
+    # TODO: Actually process refund via Razorpay API
+    # For now, just mark as cancelled with reason
+    
+    await db.commit()
+    
+    return {
+        "success": True,
+        "booking_id": str(booking.id),
+        "message": "Booking cancelled and marked for refund",
+        "reason": reason
+    }
+
+
+# =============================================================================
+# FINANCE ENDPOINTS
+# =============================================================================
+
+@router.get("/finance/overview")
+async def get_finance_overview(
+    db: AsyncSession = Depends(deps.get_db),
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Get financial overview - revenue, commissions, payouts."""
+    
+    # Total revenue (all completed bookings)
+    total_revenue = await db.scalar(
+        select(func.sum(Booking.consultation_fee)).where(
+            Booking.status == "completed"
+        )
+    )
+    
+    # Total commissions earned
+    total_commissions = await db.scalar(
+        select(func.sum(Booking.platform_commission)).where(
+            Booking.status == "completed"
+        )
+    )
+    
+    # Total lawyer payouts
+    total_payouts = await db.scalar(
+        select(func.sum(Booking.lawyer_payout)).where(
+            Booking.status == "completed"
+        )
+    )
+    
+    # Pending payouts (accepted bookings not yet completed)
+    pending_payouts = await db.scalar(
+        select(func.sum(Booking.lawyer_payout)).where(
+            Booking.status == "accepted"
+        )
+    )
+    
+    # Count by status
+    completed_count = await db.scalar(
+        select(func.count(Booking.id)).where(Booking.status == "completed")
+    )
+    pending_count = await db.scalar(
+        select(func.count(Booking.id)).where(Booking.status == "pending")
+    )
+    cancelled_count = await db.scalar(
+        select(func.count(Booking.id)).where(Booking.status == "cancelled")
+    )
+    
+    return {
+        "total_revenue": total_revenue or 0,
+        "total_commissions": total_commissions or 0,
+        "total_payouts": total_payouts or 0,
+        "pending_payouts": pending_payouts or 0,
+        "booking_stats": {
+            "completed": completed_count or 0,
+            "pending": pending_count or 0,
+            "cancelled": cancelled_count or 0,
+        }
+    }
+
+
+@router.get("/finance/transactions")
+async def get_transactions(
+    limit: int = Query(50, le=100),
+    offset: int = 0,
+    db: AsyncSession = Depends(deps.get_db),
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Get list of financial transactions (payments)."""
+    
+    query = select(Payment).order_by(Payment.created_at.desc())
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    query = query.offset(offset).limit(limit)
+    
+    result = await db.execute(query)
+    payments = result.scalars().all()
+    
+    transactions = []
+    for p in payments:
+        booking = await db.get(Booking, p.booking_id)
+        user = await db.get(User, booking.user_id) if booking else None
+        
+        transactions.append({
+            "id": str(p.id),
+            "booking_id": str(p.booking_id) if p.booking_id else None,
+            "user_name": user.full_name if user else "Unknown",
+            "amount": p.amount,
+            "status": p.status,
+            "razorpay_order_id": p.razorpay_order_id,
+            "razorpay_payment_id": p.razorpay_payment_id,
+            "captured_at": p.captured_at.isoformat() if p.captured_at else None,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        })
+    
+    return {
+        "total": total or 0,
+        "limit": limit,
+        "offset": offset,
+        "transactions": transactions
+    }
+
+
+# =============================================================================
+# SETTINGS ENDPOINTS
+# =============================================================================
+
+@router.get("/settings")
+async def get_platform_settings(
+    admin: dict = Depends(get_current_admin)
+) -> Any:
+    """Get platform settings."""
+    
+    # These would typically come from a settings table
+    # For now, returning config-based settings
+    return {
+        "platform_name": settings.PROJECT_NAME,
+        "commission_rate": 10,  # 10% commission
+        "min_consultation_fee": 500,
+        "max_consultation_duration": 120,  # minutes
+        "features": {
+            "ai_summaries": True,
+            "video_consultations": bool(settings.AGORA_APP_ID),
+            "razorpay_enabled": bool(settings.RAZORPAY_KEY_ID),
+        }
+    }
+

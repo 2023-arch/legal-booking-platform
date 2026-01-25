@@ -4,11 +4,12 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-    Scale, Users, UserCheck, Clock, XCircle, CheckCircle,
-    BarChart3, RefreshCw, LogOut, ChevronRight, Shield
+    Scale, Users, DollarSign, Calendar, Settings,
+    BarChart3, RefreshCw, LogOut, ChevronRight, Shield,
+    UserCheck, Clock, CheckCircle, XCircle, TrendingUp
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://legal-booking-platform.onrender.com/api/v1';
 
@@ -20,50 +21,58 @@ interface DashboardStats {
     rejected_lawyers: number
 }
 
+interface FinanceOverview {
+    total_revenue: number
+    total_commissions: number
+    total_payouts: number
+    pending_payouts: number
+    booking_stats: {
+        completed: number
+        pending: number
+        cancelled: number
+    }
+}
+
 export default function AdminDashboardPage() {
     const router = useRouter()
     const [stats, setStats] = useState<DashboardStats | null>(null)
+    const [finance, setFinance] = useState<FinanceOverview | null>(null)
     const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState("")
 
     useEffect(() => {
-        // Check if admin is logged in
         const adminToken = localStorage.getItem('admin_token')
         if (!adminToken) {
             router.push('/company-admin/login')
             return
         }
 
-        fetchStats()
+        fetchData()
     }, [router])
 
-    const fetchStats = async () => {
+    const fetchData = async () => {
         setIsLoading(true)
-        setError("")
+        const token = localStorage.getItem('admin_token')
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
 
         try {
-            const token = localStorage.getItem('admin_token')
-            const response = await fetch(`${API_BASE_URL}/admin/dashboard/stats`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
+            const [statsRes, financeRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/admin/dashboard/stats`, { headers }),
+                fetch(`${API_BASE_URL}/admin/finance/overview`, { headers })
+            ])
 
-            if (response.status === 401) {
+            if (statsRes.status === 401) {
                 localStorage.removeItem('admin_token')
                 router.push('/company-admin/login')
                 return
             }
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch stats')
-            }
-
-            const data = await response.json()
-            setStats(data)
-        } catch (err: any) {
-            setError(err.message)
+            if (statsRes.ok) setStats(await statsRes.json())
+            if (financeRes.ok) setFinance(await financeRes.json())
+        } catch (err) {
+            console.error('Error fetching data:', err)
         } finally {
             setIsLoading(false)
         }
@@ -75,44 +84,44 @@ export default function AdminDashboardPage() {
         router.push('/company-admin/login')
     }
 
-    const statCards = stats ? [
+    const navItems = [
         {
-            title: "Total Users",
-            value: stats.total_users,
+            title: "Lawyer Verifications",
+            description: `${stats?.pending_verifications || 0} pending`,
+            icon: UserCheck,
+            href: "/company-admin/lawyers",
+            color: "amber",
+            highlight: (stats?.pending_verifications || 0) > 0
+        },
+        {
+            title: "User Management",
+            description: `${stats?.total_users || 0} users`,
             icon: Users,
-            color: "from-blue-500 to-blue-600",
-            bgColor: "bg-blue-500/10",
+            href: "/company-admin/users",
+            color: "blue"
         },
         {
-            title: "Total Lawyers",
-            value: stats.total_lawyers,
-            icon: Scale,
-            color: "from-purple-500 to-purple-600",
-            bgColor: "bg-purple-500/10",
+            title: "Bookings",
+            description: `${finance?.booking_stats?.pending || 0} pending`,
+            icon: Calendar,
+            href: "/company-admin/bookings",
+            color: "purple"
         },
         {
-            title: "Pending Verifications",
-            value: stats.pending_verifications,
-            icon: Clock,
-            color: "from-amber-500 to-amber-600",
-            bgColor: "bg-amber-500/10",
-            highlight: stats.pending_verifications > 0,
+            title: "Finance",
+            description: `₹${finance?.total_revenue || 0} revenue`,
+            icon: DollarSign,
+            href: "/company-admin/finance",
+            color: "green"
         },
         {
-            title: "Verified Lawyers",
-            value: stats.verified_lawyers,
-            icon: CheckCircle,
-            color: "from-green-500 to-green-600",
-            bgColor: "bg-green-500/10",
+            title: "Settings",
+            description: "Platform config",
+            icon: Settings,
+            href: "/company-admin/settings",
+            color: "slate"
         },
-        {
-            title: "Rejected",
-            value: stats.rejected_lawyers,
-            icon: XCircle,
-            color: "from-red-500 to-red-600",
-            bgColor: "bg-red-500/10",
-        },
-    ] : []
+    ]
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -133,7 +142,7 @@ export default function AdminDashboardPage() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={fetchStats}
+                            onClick={fetchData}
                             className="text-slate-400 hover:text-white"
                         >
                             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -160,90 +169,129 @@ export default function AdminDashboardPage() {
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-white">Welcome, Admin</h2>
-                            <p className="text-slate-400">Manage lawyers, users, and platform operations</p>
+                            <p className="text-slate-400">Manage lawyers, users, bookings, and platform operations</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Stats Grid */}
-                {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                        {[...Array(5)].map((_, i) => (
-                            <Card key={i} className="bg-slate-800/50 border-slate-700 animate-pulse">
-                                <CardContent className="p-6">
-                                    <div className="h-10 bg-slate-700 rounded mb-4"></div>
-                                    <div className="h-6 bg-slate-700 rounded w-1/2"></div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                        {statCards.map((stat, index) => (
-                            <Card
-                                key={index}
-                                className={`bg-slate-800/50 border-slate-700 ${stat.highlight ? 'ring-2 ring-amber-500/50' : ''}`}
-                            >
-                                <CardContent className="p-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                                            <stat.icon className={`h-5 w-5 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`} style={{ color: stat.color.includes('amber') ? '#f59e0b' : stat.color.includes('green') ? '#22c55e' : stat.color.includes('red') ? '#ef4444' : stat.color.includes('blue') ? '#3b82f6' : '#a855f7' }} />
+                {/* Stats Overview */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <Card className="bg-slate-800/50 border-slate-700">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                                    <Users className="h-5 w-5 text-blue-500" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-white">{stats?.total_users || 0}</p>
+                                    <p className="text-xs text-slate-400">Total Users</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-slate-800/50 border-slate-700">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                                    <Scale className="h-5 w-5 text-purple-500" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-white">{stats?.verified_lawyers || 0}</p>
+                                    <p className="text-xs text-slate-400">Verified Lawyers</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-slate-800/50 border-slate-700">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                    <TrendingUp className="h-5 w-5 text-green-500" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-white">₹{finance?.total_revenue || 0}</p>
+                                    <p className="text-xs text-slate-400">Total Revenue</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className={`bg-slate-800/50 border-slate-700 ${(stats?.pending_verifications || 0) > 0 ? 'ring-2 ring-amber-500/50' : ''}`}>
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                                    <Clock className="h-5 w-5 text-amber-500" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-white">{stats?.pending_verifications || 0}</p>
+                                    <p className="text-xs text-slate-400">Pending Reviews</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Navigation Cards */}
+                <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {navItems.map((item, index) => (
+                        <Link key={index} href={item.href}>
+                            <Card className={`bg-slate-800/50 border-slate-700 hover:border-${item.color}-500/50 transition-all cursor-pointer group ${item.highlight ? 'ring-2 ring-amber-500/50' : ''}`}>
+                                <CardContent className="p-5">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 bg-${item.color}-500/20 rounded-xl flex items-center justify-center`}>
+                                                <item.icon className={`h-6 w-6 text-${item.color}-500`} style={{
+                                                    color: item.color === 'amber' ? '#f59e0b' :
+                                                        item.color === 'blue' ? '#3b82f6' :
+                                                            item.color === 'purple' ? '#a855f7' :
+                                                                item.color === 'green' ? '#22c55e' : '#64748b'
+                                                }} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-semibold text-white">{item.title}</h3>
+                                                <p className="text-sm text-slate-400">{item.description}</p>
+                                            </div>
                                         </div>
-                                        <span className="text-3xl font-bold text-white">{stat.value}</span>
+                                        <ChevronRight className={`h-5 w-5 text-slate-500 group-hover:text-${item.color}-500 transition-colors`} />
                                     </div>
-                                    <p className="text-sm text-slate-400">{stat.title}</p>
                                 </CardContent>
                             </Card>
-                        ))}
+                        </Link>
+                    ))}
+                </div>
+
+                {/* Booking Stats */}
+                {finance && (
+                    <div className="mt-8">
+                        <h3 className="text-lg font-semibold text-white mb-4">Booking Overview</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                            <Card className="bg-slate-800/50 border-slate-700">
+                                <CardContent className="p-4 text-center">
+                                    <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                                    <p className="text-2xl font-bold text-white">{finance.booking_stats.completed}</p>
+                                    <p className="text-xs text-slate-400">Completed</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-slate-800/50 border-slate-700">
+                                <CardContent className="p-4 text-center">
+                                    <Clock className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+                                    <p className="text-2xl font-bold text-white">{finance.booking_stats.pending}</p>
+                                    <p className="text-xs text-slate-400">Pending</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-slate-800/50 border-slate-700">
+                                <CardContent className="p-4 text-center">
+                                    <XCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                                    <p className="text-2xl font-bold text-white">{finance.booking_stats.cancelled}</p>
+                                    <p className="text-xs text-slate-400">Cancelled</p>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 )}
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Pending Verifications */}
-                    <Link href="/company-admin/lawyers">
-                        <Card className="bg-slate-800/50 border-slate-700 hover:border-amber-500/50 transition-all cursor-pointer group">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                                            <UserCheck className="h-6 w-6 text-amber-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-white">Lawyer Verifications</h3>
-                                            <p className="text-sm text-slate-400">
-                                                {stats?.pending_verifications || 0} pending approvals
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="h-5 w-5 text-slate-500 group-hover:text-amber-500 transition-colors" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
-
-                    {/* All Lawyers */}
-                    <Link href="/company-admin/lawyers?status=all">
-                        <Card className="bg-slate-800/50 border-slate-700 hover:border-purple-500/50 transition-all cursor-pointer group">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                                            <Scale className="h-6 w-6 text-purple-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-white">All Lawyers</h3>
-                                            <p className="text-sm text-slate-400">
-                                                View and manage all registered lawyers
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="h-5 w-5 text-slate-500 group-hover:text-purple-500 transition-colors" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
-                </div>
             </main>
         </div>
     )
