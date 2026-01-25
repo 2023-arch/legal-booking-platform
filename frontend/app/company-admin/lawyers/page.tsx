@@ -305,29 +305,59 @@ function AdminLawyersContent() {
                                     <div>
                                         <h4 className="text-sm font-semibold text-slate-300 mb-3">Documents</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {selectedLawyer.bar_council_certificate_url && (
+                                            {selectedLawyer.bar_council_certificate_url ? (
                                                 <a
                                                     href={selectedLawyer.bar_council_certificate_url}
                                                     target="_blank"
+                                                    rel="noopener noreferrer"
                                                     className="flex items-center gap-3 bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors"
                                                 >
                                                     <FileText className="h-5 w-5 text-amber-500" />
                                                     <span className="text-sm text-white">Bar Certificate</span>
                                                     <ExternalLink className="h-4 w-4 text-slate-400 ml-auto" />
                                                 </a>
+                                            ) : (
+                                                <div className="flex items-center gap-3 bg-slate-700/30 rounded-lg p-4 opacity-50">
+                                                    <FileText className="h-5 w-5 text-slate-500" />
+                                                    <span className="text-sm text-slate-400">Bar Certificate - Not uploaded</span>
+                                                </div>
                                             )}
-                                            {selectedLawyer.id_proof_url && (
+                                            {selectedLawyer.id_proof_url ? (
                                                 <a
                                                     href={selectedLawyer.id_proof_url}
                                                     target="_blank"
+                                                    rel="noopener noreferrer"
                                                     className="flex items-center gap-3 bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors"
                                                 >
                                                     <FileText className="h-5 w-5 text-blue-500" />
                                                     <span className="text-sm text-white">ID Proof</span>
                                                     <ExternalLink className="h-4 w-4 text-slate-400 ml-auto" />
                                                 </a>
+                                            ) : (
+                                                <div className="flex items-center gap-3 bg-slate-700/30 rounded-lg p-4 opacity-50">
+                                                    <FileText className="h-5 w-5 text-slate-500" />
+                                                    <span className="text-sm text-slate-400">ID Proof - Not uploaded</span>
+                                                </div>
+                                            )}
+                                            {selectedLawyer.profile_photo_url && (
+                                                <a
+                                                    href={selectedLawyer.profile_photo_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-3 bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors"
+                                                >
+                                                    <FileText className="h-5 w-5 text-green-500" />
+                                                    <span className="text-sm text-white">Profile Photo</span>
+                                                    <ExternalLink className="h-4 w-4 text-slate-400 ml-auto" />
+                                                </a>
                                             )}
                                         </div>
+                                        {/* Debug: Show if Cloudinary URLs are missing */}
+                                        {!selectedLawyer.bar_council_certificate_url && !selectedLawyer.id_proof_url && (
+                                            <p className="text-xs text-red-400 mt-2">
+                                                ⚠️ No document URLs found. Check Cloudinary configuration in Render.
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Rejection Reason (if rejected) */}
