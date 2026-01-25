@@ -198,6 +198,7 @@ async def get_pending_lawyers(
             "bio": lawyer.bio,
             "consultation_fee": lawyer.consultation_fee,
             "languages": lawyer.languages,
+            "verification_status": lawyer.verification_status,
             "bar_council_certificate_url": lawyer.bar_council_certificate_url,
             "id_proof_url": lawyer.id_proof_url,
             "profile_photo_url": lawyer.profile_photo_url,
