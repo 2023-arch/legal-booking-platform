@@ -133,3 +133,85 @@ async def register_user(
         "refresh_token": security.create_refresh_token(user.id),
         "token_type": "bearer",
     }
+
+
+# Forgot Password Request Schema
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    request: ForgotPasswordRequest
+) -> Any:
+    """
+    Request password reset. Always returns success to prevent email enumeration.
+    In production, this would send an email with the reset link.
+    """
+    import secrets
+    from datetime import datetime, timezone
+    
+    # Find user by email
+    query = select(User).where(User.email == request.email)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+    
+    if user:
+        # Generate reset token
+        reset_token = secrets.token_urlsafe(32)
+        # In a real implementation, store token and expiry in user record
+        # user.password_reset_token = reset_token
+        # user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        # await db.commit()
+        
+        # TODO: Send email with reset link
+        # email_service.send_password_reset(user.email, reset_token)
+        pass
+    
+    # Always return success to prevent email enumeration attacks
+    return {
+        "message": "If an account exists with this email, you will receive a password reset link."
+    }
+
+
+@router.post("/reset-password")
+async def reset_password(
+    *,
+    db: AsyncSession = Depends(deps.get_db),
+    request: ResetPasswordRequest
+) -> Any:
+    """
+    Reset password using token from email.
+    Note: Full implementation requires password_reset_token column in User model.
+    """
+    # In a real implementation:
+    # 1. Find user by reset token
+    # 2. Check token is not expired
+    # 3. Hash new password
+    # 4. Update user password
+    # 5. Clear reset token
+    
+    # For now, return a placeholder response
+    # query = select(User).where(User.password_reset_token == request.token)
+    # result = await db.execute(query)
+    # user = result.scalar_one_or_none()
+    
+    # if not user or user.password_reset_expires < datetime.now(timezone.utc):
+    #     raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    # user.hashed_password = security.get_password_hash(request.new_password)
+    # user.password_reset_token = None
+    # user.password_reset_expires = None
+    # await db.commit()
+    
+    return {
+        "message": "Password reset functionality will be fully enabled once email service is configured."
+    }
+
