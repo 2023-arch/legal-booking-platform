@@ -5,7 +5,8 @@ from sqlalchemy import select, and_, or_, func
 import json
 
 from api import deps
-from core import storage
+# from core import storage
+from core import mock_storage as storage
 from models.user import User
 from models.lawyer import Lawyer, LawyerCourt, LawyerSpecialization
 from models.location import Court
