@@ -391,15 +391,15 @@ function SearchPageContent() {
                                     {[...Array(5)].map((_, i) => (
                                       <Star
                                         key={i}
-                                        className={`h-4 w-4 ${i < Math.floor(lawyer.average_rating)
-                                            ? 'fill-yellow-400 text-yellow-400'
-                                            : 'text-gray-300'
+                                        className={`h-4 w-4 ${i < Math.floor(lawyer.average_rating || 0)
+                                          ? 'fill-yellow-400 text-yellow-400'
+                                          : 'text-gray-300'
                                           }`}
                                       />
                                     ))}
                                   </div>
                                   <span className="text-sm text-gray-600">
-                                    {lawyer.average_rating.toFixed(1)} ({lawyer.total_reviews} reviews)
+                                    {(lawyer.average_rating || 0).toFixed(1)} ({lawyer.total_reviews || 0} reviews)
                                   </span>
                                 </div>
                               </div>

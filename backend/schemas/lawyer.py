@@ -46,6 +46,9 @@ class Lawyer(LawyerBase):
     
     courts: List[Court] = []  # Need to map from relationship
     specializations: List[LawyerSpecializationResponse] = []
+    
+    average_rating: float = 0.0
+    total_reviews: int = 0
 
     class Config:
         from_attributes = True
