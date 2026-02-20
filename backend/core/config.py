@@ -8,15 +8,19 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"  # Must match frontend expectation
     
     # CORS
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: List[str] = []
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            # Clean up the string by removing brackets and quotes if it was passed as a JSON-like string
+            cleaned_str = v.strip('[]"\'')
+            if not cleaned_str:
+                return []
+            return [i.strip().strip('"\'') for i in cleaned_str.split(",")]
+        elif isinstance(v, list):
             return v
-        raise ValueError(v)
+        return []
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://admin:password@localhost:5432/legal_booking"

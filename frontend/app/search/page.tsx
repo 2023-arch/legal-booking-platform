@@ -379,27 +379,30 @@ function SearchPageContent() {
                         <div className="flex gap-6">
                           <Avatar className="h-20 w-20">
                             <AvatarImage src={lawyer.profile_photo_url} />
-                            <AvatarFallback className="text-xl">{lawyer.name[0]}</AvatarFallback>
+                            <AvatarFallback className="text-xl">{lawyer.name?.[0] || 'L'}</AvatarFallback>
                           </Avatar>
 
                           <div className="flex-1">
                             <div className="flex justify-between items-start mb-2">
                               <div>
-                                <h3 className="text-xl font-semibold">{lawyer.name}</h3>
+                                <h3 className="text-xl font-semibold">{lawyer.name || 'Unnamed Lawyer'}</h3>
                                 <div className="flex items-center gap-2 mt-1">
                                   <div className="flex items-center">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={`h-4 w-4 ${i < Math.floor(lawyer.average_rating || 0)
-                                          ? 'fill-yellow-400 text-yellow-400'
-                                          : 'text-gray-300'
-                                          }`}
-                                      />
-                                    ))}
+                                    {[...Array(5)].map((_, i) => {
+                                      const averageRating = typeof lawyer.average_rating === 'number' ? lawyer.average_rating : 0;
+                                      return (
+                                        <Star
+                                          key={i}
+                                          className={`h-4 w-4 ${i < Math.floor(averageRating)
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-gray-300'
+                                            }`}
+                                        />
+                                      );
+                                    })}
                                   </div>
                                   <span className="text-sm text-gray-600">
-                                    {(lawyer.average_rating || 0).toFixed(1)} ({lawyer.total_reviews || 0} reviews)
+                                    {typeof lawyer.average_rating === 'number' ? lawyer.average_rating.toFixed(1) : '0.0'} ({lawyer.total_reviews || 0} reviews)
                                   </span>
                                 </div>
                               </div>
