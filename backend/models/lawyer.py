@@ -31,11 +31,11 @@ class Lawyer(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    user = relationship("User", foreign_keys=[user_id], backref="lawyer_profile")
+    user = relationship("User", foreign_keys=[user_id], backref="lawyer_profile", lazy="selectin")
     verifier = relationship("User", foreign_keys=[verified_by])
     
-    courts = relationship("LawyerCourt", back_populates="lawyer", cascade="all, delete-orphan")
-    specializations = relationship("LawyerSpecialization", back_populates="lawyer", cascade="all, delete-orphan")
+    courts = relationship("LawyerCourt", back_populates="lawyer", cascade="all, delete-orphan", lazy="selectin")
+    specializations = relationship("LawyerSpecialization", back_populates="lawyer", cascade="all, delete-orphan", lazy="selectin")
 
 class LawyerCourt(Base):
     __tablename__ = "lawyer_courts"
@@ -46,7 +46,7 @@ class LawyerCourt(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     lawyer = relationship("Lawyer", back_populates="courts")
-    court = relationship("Court")
+    court = relationship("Court", lazy="selectin")
     
     __table_args__ = (UniqueConstraint('lawyer_id', 'court_id', name='uq_lawyer_court'),)
 
@@ -60,7 +60,7 @@ class LawyerSpecialization(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     lawyer = relationship("Lawyer", back_populates="specializations")
-    specialization = relationship("Specialization", foreign_keys=[specialization_id])
-    sub_specialization = relationship("Specialization", foreign_keys=[sub_specialization_id])
+    specialization = relationship("Specialization", foreign_keys=[specialization_id], lazy="selectin")
+    sub_specialization = relationship("Specialization", foreign_keys=[sub_specialization_id], lazy="selectin")
 
     __table_args__ = (UniqueConstraint('lawyer_id', 'specialization_id', 'sub_specialization_id', name='uq_lawyer_spec'),)

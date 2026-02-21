@@ -118,7 +118,7 @@ async def register_lawyer(
     
     return lawyer
 
-@router.get("/search", response_model=List[LawyerSchema])
+@router.get("/search")
 async def search_lawyers(
     db: AsyncSession = Depends(deps.get_db),
     query: Optional[str] = None,
@@ -127,32 +127,92 @@ async def search_lawyers(
     min_price: Optional[int] = None,
     max_price: Optional[int] = None,
     limit: int = 20,
-    skip: int = 0
+    skip: int = 0,
+    page: int = 1,
+    sort_by: Optional[str] = None,
+    state_id: Optional[str] = None,
+    district_id: Optional[str] = None,
+    min_experience: Optional[str] = None,
+    min_rating: Optional[str] = None,
+    languages: Optional[str] = None,
+    sub_specialization_id: Optional[str] = None,
 ):
     """
     Search lawyers with filters.
+    Returns wrapped response: {data: {lawyers: [...], pagination: {...}}}
     """
-    stmt = select(Lawyer).where(Lawyer.verification_status == "verified")
+    from sqlalchemy.orm import selectinload
+
+    stmt = select(Lawyer).options(
+        selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
+        selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization),
+    )
+    
+    # Only show verified lawyers
+    stmt = stmt.where(Lawyer.verification_status == "verified")
 
     if query:
         stmt = stmt.where(or_(
             Lawyer.bio.ilike(f"%{query}%"),
-            # Add join with User to search by name if needed
         ))
     if min_price:
         stmt = stmt.where(Lawyer.consultation_fee >= min_price)
     if max_price:
         stmt = stmt.where(Lawyer.consultation_fee <= max_price)
     
-    # Add joins for complex filters (court, specialization)
     if court_id:
         stmt = stmt.join(LawyerCourt).where(LawyerCourt.court_id == court_id)
     if specialization_id:
         stmt = stmt.join(LawyerSpecialization).where(LawyerSpecialization.specialization_id == specialization_id)
 
-    stmt = stmt.offset(skip).limit(limit)
+    # Count total for pagination
+    from sqlalchemy import func as sqla_func
+    count_stmt = select(sqla_func.count()).select_from(stmt.subquery())
+    total_result = await db.execute(count_stmt)
+    total = total_result.scalar() or 0
+
+    # Apply pagination
+    offset = (page - 1) * limit
+    stmt = stmt.offset(offset).limit(limit)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    lawyers_list = result.unique().scalars().all()
+
+    # Build response with name from User
+    lawyers_data = []
+    for lawyer in lawyers_list:
+        lawyer_dict = {
+            "id": str(lawyer.id),
+            "user_id": str(lawyer.user_id),
+            "name": lawyer.user.full_name if lawyer.user else "Unknown",
+            "bar_council_number": lawyer.bar_council_number,
+            "years_experience": lawyer.years_experience,
+            "education": lawyer.education,
+            "bio": lawyer.bio,
+            "languages": lawyer.languages or [],
+            "consultation_fee": lawyer.consultation_fee,
+            "verification_status": lawyer.verification_status,
+            "profile_photo_url": lawyer.profile_photo_url,
+            "average_rating": lawyer.average_rating if hasattr(lawyer, 'average_rating') and lawyer.average_rating else 0.0,
+            "total_reviews": lawyer.total_reviews if hasattr(lawyer, 'total_reviews') and lawyer.total_reviews else 0,
+            "courts": [],
+            "specializations": [],
+        }
+        lawyers_data.append(lawyer_dict)
+
+    total_pages = max(1, (total + limit - 1) // limit)
+    
+    return {
+        "status": "success",
+        "data": {
+            "lawyers": lawyers_data,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "total_pages": total_pages,
+                "per_page": limit,
+            }
+        }
+    }
 
 @router.get("/pending", response_model=List[LawyerSchema])
 async def get_pending_lawyers(

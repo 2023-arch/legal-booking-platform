@@ -13,4 +13,4 @@ class Specialization(Base):
     parent_id = Column(UUID(as_uuid=True), ForeignKey("specializations.id"), nullable=True)
     description = Column(Text, nullable=True)
 
-    parent = relationship("Specialization", remote_side=[id], backref=backref("sub_specializations", lazy="dynamic"))
+    parent = relationship("Specialization", remote_side=[id], backref=backref("sub_specializations", lazy="selectin"))
