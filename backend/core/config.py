@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://admin:password@localhost:5432/legal_booking"
     
-    # Redis
-    REDIS_URL: str
+    # Redis (optional - graceful fallback if unavailable)
+    REDIS_URL: str = ""
 
     # Security
     SECRET_KEY: str
@@ -57,11 +57,14 @@ class Settings(BaseSettings):
     PINECONE_API_KEY: str = ""
     PINECONE_ENVIRONMENT: str = ""
     
-    # Admin Panel (Company Credentials)
-    ADMIN_USERNAME: str = "legal_platform_admin"
-    ADMIN_PASSWORD: str = ""  # Set in environment variable
+    # Admin Panel (Fix #8: No hardcoded defaults — must set in env vars)
+    ADMIN_USERNAME: str = ""  # MUST be set in Render env vars
+    ADMIN_PASSWORD: str = ""  # MUST be set in Render env vars
     ADMIN_SECRET_KEY: str = ""  # Separate JWT secret for admin tokens
     ADMIN_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour session
+
+    # Error Tracking (Fix #10)
+    SENTRY_DSN: str = ""  # Set to enable Sentry error tracking
 
     class Config:
         case_sensitive = True

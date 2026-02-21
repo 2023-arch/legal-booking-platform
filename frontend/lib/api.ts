@@ -12,15 +12,26 @@ class ApiClient {
         'Content-Type': 'application/json',
       },
       timeout: 30000, // 30 seconds
+      withCredentials: true, // Send httpOnly cookies cross-origin
     });
 
-    // Request interceptor - Add auth token
+    // Request interceptor - Add auth token + CSRF token
     this.client.interceptors.request.use(
       (config) => {
         if (typeof window !== 'undefined') {
+          // Auth: Bearer token from localStorage (fallback for non-cookie auth)
           const token = localStorage.getItem('access_token');
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+          }
+
+          // CSRF: Read csrf_token cookie and set as header
+          const csrfToken = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrf_token='))
+            ?.split('=')[1];
+          if (csrfToken) {
+            config.headers['X-CSRF-Token'] = csrfToken;
           }
         }
         return config;

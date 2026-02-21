@@ -23,3 +23,6 @@ pinecone
 langchain
 langchain-google-genai
 bleach
+pytest
+pytest-asyncio
+aiosqlite

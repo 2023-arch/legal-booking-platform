@@ -22,6 +22,8 @@ from db.base import Base
 # Import security middleware
 from core.rate_limit import RateLimitMiddleware
 from core.security_middleware import SecurityHeadersMiddleware, RequestLoggingMiddleware
+from core.csrf import CSRFMiddleware
+from core.keep_alive import start_keep_alive
 
 # Configure logging
 logging.basicConfig(
@@ -29,6 +31,19 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Sentry error tracking (Fix #10)
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+        traces_sample_rate=0.1,  # 10% of requests for performance monitoring
+        send_default_pii=False,  # Don't send PII data
+    )
+    logger.info("Sentry error tracking enabled")
 
 # =============================================================================
 # APPLICATION SETUP
@@ -53,6 +68,9 @@ app.add_middleware(RateLimitMiddleware)
 
 # 3. Security Headers
 app.add_middleware(SecurityHeadersMiddleware)
+
+# 3.5 CSRF Protection (after security headers, before CORS)
+app.add_middleware(CSRFMiddleware)
 
 # 4. CORS (outermost - handles preflight requests BEFORE other middleware)
 # CRITICAL: allow_credentials=True cannot be used with allow_origins=["*"]
@@ -109,6 +127,11 @@ async def startup_event():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables initialized")
+    
+    # Start keep-alive background task to prevent Render cold starts
+    import os
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://legal-booking-platform.onrender.com")
+    start_keep_alive(render_url)
 
 
 @app.on_event("shutdown")

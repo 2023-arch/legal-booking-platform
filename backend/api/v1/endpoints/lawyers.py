@@ -45,6 +45,23 @@ async def register_lawyer(
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Lawyer profile already exists")
 
+    # Validate file sizes (Fix #12: prevent oversized uploads)
+    MAX_DOC_SIZE = 5 * 1024 * 1024   # 5MB for documents
+    MAX_PHOTO_SIZE = 2 * 1024 * 1024  # 2MB for profile photos
+    
+    for file_obj, max_size, label in [
+        (bar_council_certificate, MAX_DOC_SIZE, "Bar Council Certificate"),
+        (id_proof, MAX_DOC_SIZE, "ID Proof"),
+        (profile_photo, MAX_PHOTO_SIZE, "Profile Photo"),
+    ]:
+        content = await file_obj.read()
+        if len(content) > max_size:
+            raise HTTPException(
+                status_code=413,
+                detail=f"{label} exceeds maximum size of {max_size // (1024*1024)}MB"
+            )
+        await file_obj.seek(0)  # Reset file pointer after reading
+
     # Upload files (all mandatory)
     cert_url = await storage.upload_file(bar_council_certificate, f"lawyers/{current_user.id}/documents")
     id_proof_url = await storage.upload_file(id_proof, f"lawyers/{current_user.id}/documents")
@@ -211,6 +228,56 @@ async def search_lawyers(
                 "total_pages": total_pages,
                 "per_page": limit,
             }
+        }
+    }
+
+@router.get("/featured")
+async def get_featured_lawyers(
+    db: AsyncSession = Depends(deps.get_db),
+    limit: int = 6,
+):
+    """
+    Get top-rated verified lawyers for the landing page.
+    Returns the same dict structure as /search for frontend compatibility.
+    """
+    from sqlalchemy.orm import selectinload
+
+    stmt = (
+        select(Lawyer)
+        .options(
+            selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization),
+        )
+        .where(Lawyer.verification_status == "verified")
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    lawyers_list = result.unique().scalars().all()
+
+    lawyers_data = []
+    for lawyer in lawyers_list:
+        lawyers_data.append({
+            "id": str(lawyer.id),
+            "user_id": str(lawyer.user_id),
+            "name": lawyer.user.full_name if lawyer.user else "Unknown",
+            "bar_council_number": lawyer.bar_council_number,
+            "years_experience": lawyer.years_experience,
+            "education": lawyer.education,
+            "bio": lawyer.bio,
+            "languages": lawyer.languages or [],
+            "consultation_fee": lawyer.consultation_fee,
+            "verification_status": lawyer.verification_status,
+            "profile_photo_url": lawyer.profile_photo_url,
+            "average_rating": lawyer.average_rating if hasattr(lawyer, 'average_rating') and lawyer.average_rating else 0.0,
+            "total_reviews": lawyer.total_reviews if hasattr(lawyer, 'total_reviews') and lawyer.total_reviews else 0,
+            "courts": [],
+            "specializations": [],
+        })
+
+    return {
+        "status": "success",
+        "data": {
+            "lawyers": lawyers_data,
         }
     }
 

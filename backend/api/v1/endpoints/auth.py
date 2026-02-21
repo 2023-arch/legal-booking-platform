@@ -1,10 +1,11 @@
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from pydantic import BaseModel
 
 from api import deps
 from core import security
@@ -15,8 +16,45 @@ from schemas.token import Token
 
 router = APIRouter()
 
+# =============================================================================
+# COOKIE HELPERS
+# =============================================================================
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: str):
+    """Set httpOnly secure cookies for JWT tokens."""
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
+        path="/api/v1/auth",  # Only sent to auth endpoints
+    )
+
+
+def _clear_auth_cookies(response: Response):
+    """Clear auth cookies on logout."""
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/api/v1/auth")
+
+
+# =============================================================================
+# LOGIN ENDPOINTS
+# =============================================================================
+
 @router.post("/login", response_model=Token)
 async def login_access_token(
+    response: Response,
     db: AsyncSession = Depends(deps.get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
@@ -24,7 +62,6 @@ async def login_access_token(
     OAuth2 compatible token login using form data.
     Use /login-json for JSON-based login.
     """
-    # Find user by email (or phone)
     query = select(User).where(User.email == form_data.username)
     result = await db.execute(query)
     user = result.scalar_one_or_none()
@@ -39,16 +76,19 @@ async def login_access_token(
         raise HTTPException(status_code=400, detail="Inactive user")
         
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(user.id, expires_delta=access_token_expires)
+    refresh_token = security.create_refresh_token(user.id)
+    
+    # Set httpOnly cookies
+    _set_auth_cookies(response, access_token, refresh_token)
+    
+    # Also return tokens in JSON body for backward compatibility
     return {
-        "access_token": security.create_access_token(
-            user.id, expires_delta=access_token_expires
-        ),
-        "refresh_token": security.create_refresh_token(user.id),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
     }
 
-
-from pydantic import BaseModel
 
 class LoginRequest(BaseModel):
     username: str  # email or phone
@@ -57,14 +97,15 @@ class LoginRequest(BaseModel):
 
 @router.post("/login-json", response_model=Token)
 async def login_json(
+    response: Response,
     *,
     db: AsyncSession = Depends(deps.get_db),
     login_data: LoginRequest
 ) -> Any:
     """
     JSON-based login endpoint (simpler than OAuth2 form).
+    Sets httpOnly cookies AND returns tokens in JSON body.
     """
-    # Find user by email (or phone)
     query = select(User).where(User.email == login_data.username)
     result = await db.execute(query)
     user = result.scalar_one_or_none()
@@ -79,22 +120,32 @@ async def login_json(
         raise HTTPException(status_code=400, detail="Inactive user")
         
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(user.id, expires_delta=access_token_expires)
+    refresh_token = security.create_refresh_token(user.id)
+    
+    # Set httpOnly cookies
+    _set_auth_cookies(response, access_token, refresh_token)
+    
     return {
-        "access_token": security.create_access_token(
-            user.id, expires_delta=access_token_expires
-        ),
-        "refresh_token": security.create_refresh_token(user.id),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
     }
 
+
+# =============================================================================
+# REGISTER
+# =============================================================================
+
 @router.post("/register", response_model=Token)
 async def register_user(
+    response: Response,
     *,
     db: AsyncSession = Depends(deps.get_db),
     user_in: UserCreate
 ) -> Any:
     """
-    Create new user.
+    Create new user. Sets httpOnly cookies on success.
     """
     # Check if user exists
     query = select(User).where(User.email == user_in.email)
@@ -114,7 +165,7 @@ async def register_user(
         hashed_password=security.get_password_hash(user_in.password),
         user_type=user_in.user_type,
         is_active=True,
-        is_verified=False # Pending verification
+        is_verified=False  # Pending verification
     )
     
     db.add(user)
@@ -126,16 +177,34 @@ async def register_user(
         raise HTTPException(status_code=400, detail="User creation failed")
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(user.id, expires_delta=access_token_expires)
+    refresh_token = security.create_refresh_token(user.id)
+    
+    # Set httpOnly cookies
+    _set_auth_cookies(response, access_token, refresh_token)
+    
     return {
-        "access_token": security.create_access_token(
-            user.id, expires_delta=access_token_expires
-        ),
-        "refresh_token": security.create_refresh_token(user.id),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
     }
 
 
-# Forgot Password Request Schema
+# =============================================================================
+# LOGOUT
+# =============================================================================
+
+@router.post("/logout")
+async def logout(response: Response):
+    """Clear auth cookies."""
+    _clear_auth_cookies(response)
+    return {"message": "Logged out successfully"}
+
+
+# =============================================================================
+# PASSWORD RESET
+# =============================================================================
+
 class ForgotPasswordRequest(BaseModel):
     email: str
 
@@ -158,24 +227,15 @@ async def forgot_password(
     import secrets
     from datetime import datetime, timezone
     
-    # Find user by email
     query = select(User).where(User.email == request.email)
     result = await db.execute(query)
     user = result.scalar_one_or_none()
     
     if user:
-        # Generate reset token
         reset_token = secrets.token_urlsafe(32)
-        # In a real implementation, store token and expiry in user record
-        # user.password_reset_token = reset_token
-        # user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
-        # await db.commit()
-        
-        # TODO: Send email with reset link
-        # email_service.send_password_reset(user.email, reset_token)
+        # TODO: Store token in DB and send email
         pass
     
-    # Always return success to prevent email enumeration attacks
     return {
         "message": "If an account exists with this email, you will receive a password reset link."
     }
@@ -191,27 +251,6 @@ async def reset_password(
     Reset password using token from email.
     Note: Full implementation requires password_reset_token column in User model.
     """
-    # In a real implementation:
-    # 1. Find user by reset token
-    # 2. Check token is not expired
-    # 3. Hash new password
-    # 4. Update user password
-    # 5. Clear reset token
-    
-    # For now, return a placeholder response
-    # query = select(User).where(User.password_reset_token == request.token)
-    # result = await db.execute(query)
-    # user = result.scalar_one_or_none()
-    
-    # if not user or user.password_reset_expires < datetime.now(timezone.utc):
-    #     raise HTTPException(status_code=400, detail="Invalid or expired reset token")
-    
-    # user.hashed_password = security.get_password_hash(request.new_password)
-    # user.password_reset_token = None
-    # user.password_reset_expires = None
-    # await db.commit()
-    
     return {
         "message": "Password reset functionality will be fully enabled once email service is configured."
     }
-
