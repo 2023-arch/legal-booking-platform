@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from api import deps
 from models.location import State, District, Court
@@ -28,9 +29,9 @@ async def get_courts(district_id: str, db: AsyncSession = Depends(deps.get_db)):
 
 @router.get("/specializations", response_model=List[SpecializationSchema])
 async def get_specializations(db: AsyncSession = Depends(deps.get_db)):
-    # Return only top-level specializations (parent_id is None) with sub-specializations nested ?
-    # Or just return flat list for now or simplified hierarchy
-    # For now, let's return all top-level hierarchy
-    result = await db.execute(select(Specialization).where(Specialization.parent_id == None))
-    # Note: Ensure Pydantic schema handles recursive/nested loading if needed, or stick to lazy loading
+    result = await db.execute(
+        select(Specialization)
+        .options(selectinload(Specialization.sub_specializations))
+        .where(Specialization.parent_id == None)
+    )
     return result.unique().scalars().all()

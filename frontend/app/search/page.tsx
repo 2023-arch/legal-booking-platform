@@ -294,12 +294,12 @@ function SearchPageContent() {
                 {/* Experience Filter */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">Minimum Experience</label>
-                  <Select value={filters.min_experience} onValueChange={(val) => updateFilters({ min_experience: val })}>
+                  <Select value={filters.min_experience || 'all'} onValueChange={(val) => updateFilters({ min_experience: val === 'all' ? '' : val })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Any experience" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any experience</SelectItem>
+                      <SelectItem value="all">Any experience</SelectItem>
                       <SelectItem value="5">5+ years</SelectItem>
                       <SelectItem value="10">10+ years</SelectItem>
                       <SelectItem value="15">15+ years</SelectItem>
@@ -310,12 +310,12 @@ function SearchPageContent() {
                 {/* Rating Filter */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">Minimum Rating</label>
-                  <Select value={filters.min_rating} onValueChange={(val) => updateFilters({ min_rating: val })}>
+                  <Select value={filters.min_rating || 'all'} onValueChange={(val) => updateFilters({ min_rating: val === 'all' ? '' : val })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Any rating" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any rating</SelectItem>
+                      <SelectItem value="all">Any rating</SelectItem>
                       <SelectItem value="4">4+ stars</SelectItem>
                       <SelectItem value="4.5">4.5+ stars</SelectItem>
                     </SelectContent>

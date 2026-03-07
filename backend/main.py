@@ -8,9 +8,10 @@ SECURITY: This application implements OWASP security best practices:
 - CORS configuration for allowed origins only
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.ext.asyncio import AsyncSession
 import os
 import logging
 
@@ -74,21 +75,32 @@ app.add_middleware(CSRFMiddleware)
 
 # 4. CORS (outermost - handles preflight requests BEFORE other middleware)
 # CRITICAL: allow_credentials=True cannot be used with allow_origins=["*"]
+# Always include these origins as hardcoded fallback
+HARDCODED_ORIGINS = [
+    "https://legal-booking-platform.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+
 if settings.BACKEND_CORS_ORIGINS:
-    cors_origins = [str(origin) for origin in settings.BACKEND_CORS_ORIGINS]
-    allow_creds = True
+    cors_origins = list(set(
+        [str(origin) for origin in settings.BACKEND_CORS_ORIGINS] + HARDCODED_ORIGINS
+    ))
 else:
-    # Fallback to wildcard - must disable credentials
-    cors_origins = ["*"]
-    allow_creds = False
+    cors_origins = HARDCODED_ORIGINS
+
+# Also support extra origins via environment variable
+extra = os.getenv("ALLOWED_ORIGINS", "")
+if extra:
+    cors_origins.extend([o.strip() for o in extra.split(",") if o.strip()])
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_credentials=allow_creds,
-    allow_methods=["*"],  # Allow all methods including OPTIONS
-    allow_headers=["*"],  # Allow all headers to avoid preflight issues
-    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Content-Type", "Authorization"],
 )
 
 logger.info(f"CORS enabled for origins: {cors_origins}")
@@ -107,6 +119,35 @@ def read_root():
 def health_check():
     """Health check endpoint for monitoring."""
     return {"status": "healthy", "service": settings.PROJECT_NAME}
+
+
+# Health check with DB connectivity (under /api path)
+from sqlalchemy import text as sa_text
+from fastapi.responses import JSONResponse
+from datetime import datetime, timezone
+from api.deps import get_db
+
+@app.get("/api/health", tags=["health"])
+async def api_health_check(db: AsyncSession = Depends(get_db)):
+    """Health check with database connectivity verification."""
+    try:
+        await db.execute(sa_text("SELECT 1"))
+        return {
+            "status": "ok",
+            "database": "connected",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "version": "1.0.0"
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "database": "unreachable",
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
 
 # Include API routes

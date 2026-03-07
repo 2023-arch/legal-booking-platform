@@ -161,8 +161,10 @@ async def search_lawyers(
     from sqlalchemy.orm import selectinload
 
     stmt = select(Lawyer).options(
+        selectinload(Lawyer.user),
         selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
-        selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization),
+        selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization).selectinload(Specialization.sub_specializations),
+        selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.sub_specialization),
     )
     
     # Only show verified lawyers
@@ -245,8 +247,10 @@ async def get_featured_lawyers(
     stmt = (
         select(Lawyer)
         .options(
+            selectinload(Lawyer.user),
             selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
-            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization).selectinload(Specialization.sub_specializations),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.sub_specialization),
         )
         .where(Lawyer.verification_status == "verified")
         .limit(limit)

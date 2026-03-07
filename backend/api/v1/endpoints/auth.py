@@ -147,6 +147,9 @@ async def register_user(
     """
     Create new user. Sets httpOnly cookies on success.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     # Check if user exists
     query = select(User).where(User.email == user_in.email)
     result = await db.execute(query)
@@ -155,7 +158,7 @@ async def register_user(
     if user:
         raise HTTPException(
             status_code=400,
-            detail="The user with this username already exists in the system.",
+            detail="An account with this email already exists.",
         )
         
     user = User(
@@ -172,9 +175,20 @@ async def register_user(
     try:
         await db.commit()
         await db.refresh(user)
-    except IntegrityError:
+    except IntegrityError as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail="User creation failed")
+        logger.error(f"Registration IntegrityError: {e.orig}")
+        raise HTTPException(
+            status_code=400,
+            detail="An account with this email or phone number already exists."
+        )
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Registration failed — {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Registration failed. Please try again."
+        )
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(user.id, expires_delta=access_token_expires)
