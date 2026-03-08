@@ -355,6 +355,7 @@ async def get_lawyer(
     to avoid shadowing them.
     """
     from sqlalchemy.orm import selectinload
+    from fastapi.responses import JSONResponse
     import uuid as uuid_module
     import logging
     logger = logging.getLogger(__name__)
@@ -363,7 +364,7 @@ async def get_lawyer(
     try:
         lawyer_uuid = uuid_module.UUID(lawyer_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid lawyer ID format")
+        return JSONResponse(status_code=400, content={"detail": "Invalid lawyer ID format"})
 
     try:
         stmt = (
@@ -378,55 +379,60 @@ async def get_lawyer(
         )
         result = await db.execute(stmt)
         lawyer = result.unique().scalar_one_or_none()
+    except Exception as e:
+        logger.error(f"DB query error in get_lawyer: {type(e).__name__}: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"detail": f"DB error: {type(e).__name__}: {str(e)}"})
 
-        if not lawyer:
-            raise HTTPException(status_code=404, detail="Lawyer not found")
+    if not lawyer:
+        return JSONResponse(status_code=404, content={"detail": "Lawyer not found"})
 
-        # Build response matching the search format
+    try:
+        # Build courts list
         courts_data = []
         for lc in (lawyer.courts or []):
-            try:
-                if lc.court:
-                    courts_data.append({"id": str(lc.court.id), "name": lc.court.name})
-            except Exception:
-                pass
+            if lc.court:
+                courts_data.append({"id": str(lc.court.id), "name": lc.court.name})
 
+        # Build specializations list
         specs_data = []
         for ls in (lawyer.specializations or []):
-            try:
-                spec_entry = {}
-                if ls.specialization:
-                    spec_entry["id"] = str(ls.specialization.id)
-                    spec_entry["name"] = ls.specialization.name
-                if ls.sub_specialization:
-                    spec_entry["sub_specialization"] = {
-                        "id": str(ls.sub_specialization.id),
-                        "name": ls.sub_specialization.name
-                    }
-                if spec_entry:
-                    specs_data.append(spec_entry)
-            except Exception:
-                pass
+            spec_entry = {}
+            if ls.specialization:
+                spec_entry["id"] = str(ls.specialization.id)
+                spec_entry["name"] = ls.specialization.name
+            if ls.sub_specialization:
+                spec_entry["sub_specialization"] = {
+                    "id": str(ls.sub_specialization.id),
+                    "name": ls.sub_specialization.name
+                }
+            if spec_entry:
+                specs_data.append(spec_entry)
+    except Exception as e:
+        logger.error(f"Relationship serialization error: {type(e).__name__}: {e}", exc_info=True)
+        courts_data = []
+        specs_data = []
 
-        # Compute average rating and total reviews via separate query
+    # Query reviews separately to avoid lazy loading issues
+    try:
         from models.review import Review
         from sqlalchemy import func as sqla_func
-        avg_rating = 0.0
+        review_result = await db.execute(
+            select(
+                sqla_func.count(Review.id),
+                sqla_func.coalesce(sqla_func.avg(Review.rating), 0)
+            ).where(Review.lawyer_id == lawyer_uuid)
+        )
+        row = review_result.one()
+        total_reviews = row[0] or 0
+        avg_rating = round(float(row[1]), 1)
+    except Exception as e:
+        logger.error(f"Review query error: {type(e).__name__}: {e}", exc_info=True)
         total_reviews = 0
-        try:
-            review_result = await db.execute(
-                select(
-                    sqla_func.count(Review.id),
-                    sqla_func.coalesce(sqla_func.avg(Review.rating), 0)
-                ).where(Review.lawyer_id == lawyer_uuid)
-            )
-            row = review_result.one()
-            total_reviews = row[0] or 0
-            avg_rating = round(float(row[1]), 1)
-        except Exception:
-            pass
+        avg_rating = 0.0
 
-        return {
+    return JSONResponse(
+        status_code=200,
+        content={
             "status": "success",
             "data": {
                 "id": str(lawyer.id),
@@ -447,9 +453,6 @@ async def get_lawyer(
                 "specializations": specs_data,
             }
         }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in get_lawyer({lawyer_id}): {type(e).__name__}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error loading lawyer profile: {type(e).__name__}: {str(e)}")
+    )
+
 
