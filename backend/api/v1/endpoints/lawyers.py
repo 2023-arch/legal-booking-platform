@@ -356,6 +356,8 @@ async def get_lawyer(
     """
     from sqlalchemy.orm import selectinload
     import uuid as uuid_module
+    import logging
+    logger = logging.getLogger(__name__)
 
     # Validate UUID format
     try:
@@ -363,78 +365,91 @@ async def get_lawyer(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid lawyer ID format")
 
-    stmt = (
-        select(Lawyer)
-        .options(
-            selectinload(Lawyer.user),
-            selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
-            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization).selectinload(Specialization.sub_specializations),
-            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.sub_specialization),
-        )
-        .where(Lawyer.id == lawyer_uuid)
-    )
-    result = await db.execute(stmt)
-    lawyer = result.unique().scalar_one_or_none()
-
-    if not lawyer:
-        raise HTTPException(status_code=404, detail="Lawyer not found")
-
-    # Build response matching the search format
-    courts_data = []
-    for lc in (lawyer.courts or []):
-        if lc.court:
-            courts_data.append({"id": str(lc.court.id), "name": lc.court.name})
-
-    specs_data = []
-    for ls in (lawyer.specializations or []):
-        spec_entry = {}
-        if ls.specialization:
-            spec_entry["id"] = str(ls.specialization.id)
-            spec_entry["name"] = ls.specialization.name
-        if ls.sub_specialization:
-            spec_entry["sub_specialization"] = {
-                "id": str(ls.sub_specialization.id),
-                "name": ls.sub_specialization.name
-            }
-        if spec_entry:
-            specs_data.append(spec_entry)
-
-    # Compute average rating and total reviews via separate query (avoid lazy backref MissingGreenlet)
-    from models.review import Review
-    from sqlalchemy import func as sqla_func
-    avg_rating = 0.0
-    total_reviews = 0
     try:
-        review_result = await db.execute(
-            select(
-                sqla_func.count(Review.id),
-                sqla_func.coalesce(sqla_func.avg(Review.rating), 0)
-            ).where(Review.lawyer_id == lawyer_uuid)
+        stmt = (
+            select(Lawyer)
+            .options(
+                selectinload(Lawyer.user),
+                selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
+                selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization).selectinload(Specialization.sub_specializations),
+                selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.sub_specialization),
+            )
+            .where(Lawyer.id == lawyer_uuid)
         )
-        row = review_result.one()
-        total_reviews = row[0] or 0
-        avg_rating = round(float(row[1]), 1)
-    except Exception:
-        pass
+        result = await db.execute(stmt)
+        lawyer = result.unique().scalar_one_or_none()
 
-    return {
-        "status": "success",
-        "data": {
-            "id": str(lawyer.id),
-            "user_id": str(lawyer.user_id),
-            "name": lawyer.user.full_name if lawyer.user else "Unknown",
-            "email": lawyer.user.email if lawyer.user else None,
-            "bar_council_number": lawyer.bar_council_number,
-            "years_experience": lawyer.years_experience,
-            "education": lawyer.education,
-            "bio": lawyer.bio,
-            "languages": lawyer.languages or [],
-            "consultation_fee": lawyer.consultation_fee,
-            "verification_status": lawyer.verification_status,
-            "profile_photo_url": lawyer.profile_photo_url,
-            "average_rating": avg_rating,
-            "total_reviews": total_reviews,
-            "courts": courts_data,
-            "specializations": specs_data,
+        if not lawyer:
+            raise HTTPException(status_code=404, detail="Lawyer not found")
+
+        # Build response matching the search format
+        courts_data = []
+        for lc in (lawyer.courts or []):
+            try:
+                if lc.court:
+                    courts_data.append({"id": str(lc.court.id), "name": lc.court.name})
+            except Exception:
+                pass
+
+        specs_data = []
+        for ls in (lawyer.specializations or []):
+            try:
+                spec_entry = {}
+                if ls.specialization:
+                    spec_entry["id"] = str(ls.specialization.id)
+                    spec_entry["name"] = ls.specialization.name
+                if ls.sub_specialization:
+                    spec_entry["sub_specialization"] = {
+                        "id": str(ls.sub_specialization.id),
+                        "name": ls.sub_specialization.name
+                    }
+                if spec_entry:
+                    specs_data.append(spec_entry)
+            except Exception:
+                pass
+
+        # Compute average rating and total reviews via separate query
+        from models.review import Review
+        from sqlalchemy import func as sqla_func
+        avg_rating = 0.0
+        total_reviews = 0
+        try:
+            review_result = await db.execute(
+                select(
+                    sqla_func.count(Review.id),
+                    sqla_func.coalesce(sqla_func.avg(Review.rating), 0)
+                ).where(Review.lawyer_id == lawyer_uuid)
+            )
+            row = review_result.one()
+            total_reviews = row[0] or 0
+            avg_rating = round(float(row[1]), 1)
+        except Exception:
+            pass
+
+        return {
+            "status": "success",
+            "data": {
+                "id": str(lawyer.id),
+                "user_id": str(lawyer.user_id),
+                "name": lawyer.user.full_name if lawyer.user else "Unknown",
+                "email": lawyer.user.email if lawyer.user else None,
+                "bar_council_number": lawyer.bar_council_number,
+                "years_experience": lawyer.years_experience,
+                "education": lawyer.education,
+                "bio": lawyer.bio,
+                "languages": lawyer.languages or [],
+                "consultation_fee": lawyer.consultation_fee,
+                "verification_status": lawyer.verification_status,
+                "profile_photo_url": lawyer.profile_photo_url,
+                "average_rating": avg_rating,
+                "total_reviews": total_reviews,
+                "courts": courts_data,
+                "specializations": specs_data,
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in get_lawyer({lawyer_id}): {type(e).__name__}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error loading lawyer profile: {type(e).__name__}: {str(e)}")
+
