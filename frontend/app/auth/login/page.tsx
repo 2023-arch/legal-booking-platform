@@ -34,6 +34,7 @@ export default function LoginPage() {
     const router = useRouter()
     const { login } = useAuth(); // Hook
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -45,12 +46,13 @@ export default function LoginPage() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true)
+        setError(null)
         try {
             await login(values.email, values.password);
             // Redirect is handled inside login() now
-        } catch (error: any) {
-            console.error("Login failed:", error);
-            alert(error.message || "Login failed. Please check your credentials.");
+        } catch (err: any) {
+            console.error("Login failed:", err);
+            setError(err.message || "Login failed. Please check your credentials.");
         } finally {
             setIsLoading(false)
         }
@@ -130,6 +132,13 @@ export default function LoginPage() {
                                         </FormItem>
                                     )}
                                 />
+
+                                {error && (
+                                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                                        {error}
+                                    </div>
+                                )}
+
                                 <Button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 h-11 text-base" disabled={isLoading}>
                                     {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
                                     Sign In

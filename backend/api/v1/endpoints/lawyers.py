@@ -171,8 +171,15 @@ async def search_lawyers(
     stmt = stmt.where(Lawyer.verification_status == "verified")
 
     if query:
+        # Join User to search by name, and also search specialization name
+        stmt = stmt.outerjoin(Lawyer.user.property.mapper.class_, Lawyer.user_id == User.id)
+        stmt = stmt.outerjoin(LawyerSpecialization, Lawyer.id == LawyerSpecialization.lawyer_id)
+        stmt = stmt.outerjoin(Specialization, LawyerSpecialization.specialization_id == Specialization.id)
+        search_term = f"%{query}%"
         stmt = stmt.where(or_(
-            Lawyer.bio.ilike(f"%{query}%"),
+            Lawyer.bio.ilike(search_term),
+            User.full_name.ilike(search_term),
+            Specialization.name.ilike(search_term),
         ))
     if min_price:
         stmt = stmt.where(Lawyer.consultation_fee >= min_price)
@@ -232,6 +239,7 @@ async def search_lawyers(
             }
         }
     }
+
 
 @router.get("/featured")
 async def get_featured_lawyers(
@@ -334,3 +342,88 @@ async def verify_lawyer(
 
 # Helper to generate signed URLs for response
 # Ideally, we should intercept response and sign URLs, or sign them on retrieval
+
+
+@router.get("/{lawyer_id}")
+async def get_lawyer(
+    lawyer_id: str,
+    db: AsyncSession = Depends(deps.get_db),
+):
+    """
+    Get a single lawyer's full profile by ID.
+    Must be placed AFTER all literal routes (/search, /featured, /pending)
+    to avoid shadowing them.
+    """
+    from sqlalchemy.orm import selectinload
+    import uuid as uuid_module
+
+    # Validate UUID format
+    try:
+        lawyer_uuid = uuid_module.UUID(lawyer_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid lawyer ID format")
+
+    stmt = (
+        select(Lawyer)
+        .options(
+            selectinload(Lawyer.user),
+            selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization).selectinload(Specialization.sub_specializations),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.sub_specialization),
+        )
+        .where(Lawyer.id == lawyer_uuid)
+    )
+    result = await db.execute(stmt)
+    lawyer = result.unique().scalar_one_or_none()
+
+    if not lawyer:
+        raise HTTPException(status_code=404, detail="Lawyer not found")
+
+    # Build response matching the search format
+    courts_data = []
+    for lc in (lawyer.courts or []):
+        if lc.court:
+            courts_data.append({"id": str(lc.court.id), "name": lc.court.name})
+
+    specs_data = []
+    for ls in (lawyer.specializations or []):
+        spec_entry = {}
+        if ls.specialization:
+            spec_entry["id"] = str(ls.specialization.id)
+            spec_entry["name"] = ls.specialization.name
+        if ls.sub_specialization:
+            spec_entry["sub_specialization"] = {
+                "id": str(ls.sub_specialization.id),
+                "name": ls.sub_specialization.name
+            }
+        if spec_entry:
+            specs_data.append(spec_entry)
+
+    # Compute average rating and total reviews from the reviews relationship
+    avg_rating = 0.0
+    total_reviews = 0
+    if hasattr(lawyer, 'reviews') and lawyer.reviews:
+        total_reviews = len(lawyer.reviews)
+        avg_rating = round(sum(r.rating for r in lawyer.reviews) / total_reviews, 1) if total_reviews > 0 else 0.0
+
+    return {
+        "status": "success",
+        "data": {
+            "id": str(lawyer.id),
+            "user_id": str(lawyer.user_id),
+            "name": lawyer.user.full_name if lawyer.user else "Unknown",
+            "email": lawyer.user.email if lawyer.user else None,
+            "bar_council_number": lawyer.bar_council_number,
+            "years_experience": lawyer.years_experience,
+            "education": lawyer.education,
+            "bio": lawyer.bio,
+            "languages": lawyer.languages or [],
+            "consultation_fee": lawyer.consultation_fee,
+            "verification_status": lawyer.verification_status,
+            "profile_photo_url": lawyer.profile_photo_url,
+            "average_rating": avg_rating,
+            "total_reviews": total_reviews,
+            "courts": courts_data,
+            "specializations": specs_data,
+        }
+    }
