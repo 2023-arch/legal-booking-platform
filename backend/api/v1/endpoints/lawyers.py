@@ -399,12 +399,23 @@ async def get_lawyer(
         if spec_entry:
             specs_data.append(spec_entry)
 
-    # Compute average rating and total reviews from the reviews relationship
+    # Compute average rating and total reviews via separate query (avoid lazy backref MissingGreenlet)
+    from models.review import Review
+    from sqlalchemy import func as sqla_func
     avg_rating = 0.0
     total_reviews = 0
-    if hasattr(lawyer, 'reviews') and lawyer.reviews:
-        total_reviews = len(lawyer.reviews)
-        avg_rating = round(sum(r.rating for r in lawyer.reviews) / total_reviews, 1) if total_reviews > 0 else 0.0
+    try:
+        review_result = await db.execute(
+            select(
+                sqla_func.count(Review.id),
+                sqla_func.coalesce(sqla_func.avg(Review.rating), 0)
+            ).where(Review.lawyer_id == lawyer_uuid)
+        )
+        row = review_result.one()
+        total_reviews = row[0] or 0
+        avg_rating = round(float(row[1]), 1)
+    except Exception:
+        pass
 
     return {
         "status": "success",
