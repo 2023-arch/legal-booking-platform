@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bot, Send, User, Sparkles } from "lucide-react";
+import api from "@/lib/api";
 
 interface Message {
     id: string;
@@ -40,17 +41,32 @@ export default function AIAssistantPage() {
         setInput("");
         setIsLoading(true);
 
-        // Simulate AI response
-        setTimeout(() => {
+        try {
+            const res = await api.post("/ai/ask", {
+                query: input,
+                // conversation_id: conversationId // Add if you track sessions in the future
+            });
+            const reply = res.data.answer || res.data.response;
+            
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: "I understand your query. Based on current Indian laws, this typically falls under civil jurisdiction. However, I recommend consulting with a specialized 'Property Lawyer' for a definite legal opinion. Would you like me to find some lawyers for you?",
+                content: reply,
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, aiMsg]);
+        } catch (err) {
+            console.error("AI Error:", err);
+            const errorMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: "Sorry, something went wrong. Please try again.",
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, errorMsg]);
+        } finally {
             setIsLoading(false);
-        }, 1500);
+        }
     };
 
     return (
@@ -63,7 +79,7 @@ export default function AIAssistantPage() {
                 <div>
                     <h1 className="font-bold text-slate-900">Legal AI Assistant</h1>
                     <p className="text-xs text-slate-500 flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 text-yellow-500" /> Powered by GPT-4
+                        <Sparkles className="h-3 w-3 text-yellow-500" /> Powered by Gemini AI
                     </p>
                 </div>
             </div>
