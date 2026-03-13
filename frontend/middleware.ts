@@ -6,10 +6,10 @@ export function middleware(request: NextRequest) {
 
     // Define protected routes
     const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard')
-    const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+    const isCompanyAdminRoute = request.nextUrl.pathname.startsWith('/company-admin')
 
     // If trying to access protected route without token, redirect to login
-    if ((isDashboardRoute || isAdminRoute) && !token) {
+    if ((isDashboardRoute || isCompanyAdminRoute) && !token) {
         const loginUrl = new URL('/auth/login', request.url)
         // Optional: Add redirect param to return after login
         // loginUrl.searchParams.set('from', request.nextUrl.pathname)
@@ -24,6 +24,6 @@ export function middleware(request: NextRequest) {
 export const config = {
     matcher: [
         '/dashboard/:path*',
-        '/admin/:path*',
+        '/company-admin/:path*',
     ],
 }
