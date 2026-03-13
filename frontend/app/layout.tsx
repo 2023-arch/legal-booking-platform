@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from '@/components/shared/Header';
 import Footer from '@/components/shared/Footer';
 import { AuthProvider } from '@/contexts/AuthContext';
+import Script from 'next/script';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -108,6 +109,7 @@ export default function RootLayout({
           </main>
           <Footer />
         </AuthProvider>
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="beforeInteractive" />
       </body>
     </html>
   );

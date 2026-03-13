@@ -10,8 +10,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
-import { bookingsAPI } from "@/lib/api";
+import api, { bookingsAPI } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 interface BookingModalProps {
     lawyerId: string;
@@ -26,6 +27,7 @@ export default function BookingModal({ lawyerId, lawyerName, consultationFee, tr
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const { toast } = useToast();
+    const router = useRouter();
 
     // Form State
     const [description, setDescription] = useState("");
@@ -71,14 +73,42 @@ export default function BookingModal({ lawyerId, lawyerName, consultationFee, tr
         setError("");
 
         try {
-            // In a real app, this would open Razorpay
-            // For now, we simulate the confirm call which returns the order_id
-            const paymentData = await bookingsAPI.confirmBooking(draft.booking_draft_id);
+            const res = await bookingsAPI.confirmBooking(draft.booking_draft_id);
+            const { order_id, amount, currency, is_test_mode } = (res as any).data || res;
 
-            // SIMULATING PAYMENT SUCCESS
-            // Ideally we verify payment here with another API call
+            if (is_test_mode) {
+                // Demo/test mode — skip real checkout
+                await api.post("/payments/verify", {
+                    razorpay_order_id: order_id,
+                    razorpay_payment_id: "pay_TEST_" + Date.now(),
+                    razorpay_signature: "test_signature"
+                });
+                toast({
+                    description: "Booking confirmed (Test Mode)"
+                });
+                router.push("/dashboard/bookings");
+                return;
+            }
 
-            setStep('success');
+            const rzp = new (window as any).Razorpay({
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount, currency, order_id,
+                name: "LegalBook",
+                description: "Legal Consultation Fee",
+                handler: async (response: any) => {
+                    await api.post("/payments/verify", {
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    });
+                    toast({
+                        description: "Booking confirmed successfully"
+                    });
+                    router.push("/dashboard/bookings");
+                },
+                modal: { ondismiss: () => setIsLoading(false) }
+            });
+            rzp.open();
         } catch (err: any) {
             console.error(err);
             const msg = err.response?.data?.detail || "Payment initiation failed.";
@@ -193,9 +223,11 @@ export default function BookingModal({ lawyerId, lawyerName, consultationFee, tr
                                 </div>
                             </div>
 
-                            <div className="bg-yellow-50 p-3 rounded-md text-sm text-yellow-800 border border-yellow-200">
-                                This is a mock payment for demonstration. No actual money will be deducted.
-                            </div>
+                            {draft.is_test_mode && (
+                                <div className="bg-yellow-50 p-3 rounded-md text-sm text-yellow-800 border border-yellow-200 mt-4">
+                                    Test Mode — no real charge
+                                </div>
+                            )}
 
                             <div className="flex gap-3 justify-end">
                                 <Button variant="outline" onClick={() => setStep('input')}>Back</Button>
