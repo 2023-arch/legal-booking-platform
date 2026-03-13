@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { Scale, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const isLoggedIn = false; // TODO: Connect to auth state later
+    const { user } = useAuth();
+    const isLoggedIn = !!user;
 
     return (
         <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
@@ -77,12 +79,20 @@ export default function Header() {
                         How it Works
                     </Link>
                     <hr />
-                    <Link href="/auth/login" className="w-full">
-                        <Button variant="outline" className="w-full justify-center">Log In</Button>
-                    </Link>
-                    <Link href="/auth/register" className="w-full">
-                        <Button className="w-full justify-center bg-blue-600">Get Started</Button>
-                    </Link>
+                    {isLoggedIn ? (
+                        <Link href="/dashboard" className="w-full">
+                            <Button className="w-full justify-center">Dashboard</Button>
+                        </Link>
+                    ) : (
+                        <>
+                            <Link href="/auth/login" className="w-full">
+                                <Button variant="outline" className="w-full justify-center">Log In</Button>
+                            </Link>
+                            <Link href="/auth/register" className="w-full">
+                                <Button className="w-full justify-center bg-blue-600">Get Started</Button>
+                            </Link>
+                        </>
+                    )}
                 </div>
             )}
         </nav>

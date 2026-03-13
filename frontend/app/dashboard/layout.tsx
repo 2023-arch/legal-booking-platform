@@ -1,4 +1,7 @@
+"use client";
+
 import Sidebar from '@/components/dashboard/Sidebar';
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from '@/components/ui/button';
 import { Bell } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,6 +11,12 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    }
+
     return (
         <div className="min-h-screen bg-slate-50">
             {/* Sidebar */}
@@ -27,12 +36,12 @@ export default function DashboardLayout({
                         <div className="h-8 w-px bg-slate-200" />
                         <div className="flex items-center gap-3">
                             <div className="text-right hidden md:block">
-                                <div className="text-sm font-medium text-slate-900">John Doe</div>
-                                <div className="text-xs text-slate-500">Premium Member</div>
+                                <div className="text-sm font-medium text-slate-900">{(user as any)?.full_name || user?.name || "User"}</div>
+                                <div className="text-xs text-slate-500">{(user as any)?.subscription_tier || "Standard"} Member</div>
                             </div>
                             <Avatar>
                                 <AvatarImage src="https://github.com/shadcn.png" />
-                                <AvatarFallback>JD</AvatarFallback>
+                                <AvatarFallback>{(user as any)?.full_name ? (user as any).full_name.charAt(0).toUpperCase() : user?.name ? user.name.charAt(0).toUpperCase() : "U"}</AvatarFallback>
                             </Avatar>
                         </div>
                     </div>
