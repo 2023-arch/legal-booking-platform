@@ -11,6 +11,7 @@ class Consultation(Base):
     booking_id = Column(UUID(as_uuid=True), ForeignKey("bookings.id", ondelete="CASCADE"), unique=True, nullable=False)
     
     agora_channel_name = Column(String, unique=True, nullable=False)
+    meet_link = Column(String, nullable=True)
     
     # Track call lifecycle
     started_at = Column(DateTime(timezone=True), nullable=True)

@@ -12,6 +12,9 @@ pydantic-settings
 redis
 httpx
 boto3
+google-auth
+google-auth-oauthlib
+google-api-python-client
 google-generativeai
 cloudinary
 razorpay

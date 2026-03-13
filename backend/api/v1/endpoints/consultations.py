@@ -22,6 +22,7 @@ class ConsultationResponse(BaseModel):
     agora_token: str
     channel_name: str
     app_id: str
+    meet_link: str | None = None
 
 @router.post("/start/{booking_id}", response_model=ConsultationResponse)
 async def start_consultation(
@@ -84,7 +85,8 @@ async def start_consultation(
         "consultation_id": consultation.id,
         "agora_token": token,
         "channel_name": channel_name,
-        "app_id": settings.AGORA_APP_ID
+        "app_id": settings.AGORA_APP_ID,
+        "meet_link": consultation.meet_link
     }
 
 @router.post("/end/{consultation_id}")

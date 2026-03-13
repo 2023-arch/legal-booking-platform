@@ -13,6 +13,8 @@ from db.session import get_db
 from models.booking import Booking, BookingHistory
 from models.payment import Payment, Escrow
 from models.user import User
+from models.lawyer import Lawyer
+from models.consultation import Consultation
 from schemas.payment import PaymentVerify
 
 router = APIRouter()
@@ -138,13 +140,37 @@ async def verify_payment(
     )
     db.add(escrow)
     
-    # History
     history = BookingHistory(
         booking_id=booking_id,
         status='created',
         notes='Booking created and payment verified'
     )
     db.add(history)
+    
+    # Create Consultation and Google Meet Link
+    user = await db.get(User, uuid.UUID(draft['user_id']))
+    lawyer = await db.get(Lawyer, uuid.UUID(draft['lawyer_id']))
+    lawyer_user = await db.get(User, lawyer.user_id)
+    
+    meet_link = None
+    if preferred_time and user and lawyer_user:
+        try:
+            from core.google_meet import create_meet_link
+            meet_link = create_meet_link(
+                lawyer_email=lawyer_user.email,
+                user_email=user.email,
+                start_time=preferred_time
+            )
+        except Exception as e:
+            logger.error(f"Failed to generate Google Meet link: {e}")
+
+    consultation = Consultation(
+        booking_id=booking_id,
+        agora_channel_name=f"booking_{booking_id}",
+        status="scheduled",
+        meet_link=meet_link
+    )
+    db.add(consultation)
     
     await db.commit()
     
