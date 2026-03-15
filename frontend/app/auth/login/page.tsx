@@ -52,7 +52,10 @@ export default function LoginPage() {
             // Redirect is handled inside login() now
         } catch (err: any) {
             console.error("Login failed:", err);
-            setError(err.message || "Login failed. Please check your credentials.");
+            const message = err.response?.data?.detail
+                || err.response?.data?.message
+                || "Login failed. Please check your credentials.";
+            setError(message);
         } finally {
             setIsLoading(false)
         }
@@ -105,7 +108,15 @@ export default function LoginPage() {
                                         <FormItem>
                                             <FormLabel>Email</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="name@example.com" className="h-11" {...field} />
+                                                <Input 
+                                                    placeholder="name@example.com" 
+                                                    className="h-11" 
+                                                    {...field} 
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        setError(null);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -126,7 +137,16 @@ export default function LoginPage() {
                                                 </Link>
                                             </div>
                                             <FormControl>
-                                                <Input type="password" placeholder="••••••••" className="h-11" {...field} />
+                                                <Input 
+                                                    type="password" 
+                                                    placeholder="••••••••" 
+                                                    className="h-11" 
+                                                    {...field} 
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        setError(null);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -134,7 +154,7 @@ export default function LoginPage() {
                                 />
 
                                 {error && (
-                                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-3 text-sm mb-4">
                                         {error}
                                     </div>
                                 )}
