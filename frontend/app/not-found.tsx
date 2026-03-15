@@ -1,44 +1,31 @@
-import Link from "next/link"
-import { Scale, Search, Home } from "lucide-react"
+import Link from "next/link";
+import { Search } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-gradient-to-b from-slate-50 to-white">
-      <div className="max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-10">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <Scale className="h-6 w-6 text-white" />
-          </div>
-          <span className="font-bold text-xl text-slate-900">LegalBook</span>
+    <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-slate-50">
+      <div className="text-blue-600 font-black text-9xl mb-4 opacity-20">404</div>
+      <h2 className="text-3xl font-bold text-slate-800 mb-2 z-10">
+        Page Not Found
+      </h2>
+      <p className="text-slate-500 mb-8 max-w-md z-10">
+        The page you are looking for doesn't exist or has been moved.
+      </p>
+      
+      <div className="w-full max-w-md relative mb-8 z-10">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
         </div>
-
-        {/* 404 Visual */}
-        <h1 className="text-[120px] font-bold leading-none text-slate-100 select-none">404</h1>
-        <h2 className="mt-2 text-2xl font-semibold text-slate-900">Page not found</h2>
-        <p className="mt-3 text-slate-500 text-base leading-relaxed">
-          The page you&apos;re looking for doesn&apos;t exist or has been moved.
-          Let&apos;s get you back on track.
-        </p>
-
-        {/* CTAs */}
-        <div className="mt-8 flex gap-3 justify-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-          >
-            <Home className="h-4 w-4" />
-            Go home
-          </Link>
-          <Link
-            href="/search"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 transition"
-          >
-            <Search className="h-4 w-4" />
-            Find a lawyer
-          </Link>
-        </div>
+        <input 
+            type="text" 
+            placeholder="Search lawyers, articles, or help..." 
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        />
       </div>
+
+      <Link href="/" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors z-10">
+        Go Back Home
+      </Link>
     </div>
-  )
+  );
 }

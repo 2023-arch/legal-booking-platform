@@ -63,7 +63,7 @@ export default function FeaturedLawyersSection() {
                     // Transform API data to match LawyerCard props if necessary
                     // Assuming API returns data compatible or we map it here
                     const mappedLawyers = data.data.map((l: any) => ({
-                        id: l._id || l.id,
+                        id: l.profile_id || l._id || l.id,
                         name: l.name,
                         specialization: l.specialization?.name || l.specialization || "Legal Expert",
                         location: l.city || "India",

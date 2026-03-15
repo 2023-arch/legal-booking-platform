@@ -46,7 +46,7 @@ export default function Header() {
             try {
                 // Optimistically clear badge immediately
                 setUnreadCount(0);
-                await api.patch('/notifications/read-all');
+                await api.patch('/notifications/mark-read');
                 // Refresh full state gracefully in background
                 fetchNotifications();
             } catch (error) {
@@ -91,7 +91,9 @@ export default function Header() {
                                     <Button variant="ghost" size="icon" className="relative">
                                         <Bell className="h-5 w-5 text-gray-600 hover:text-blue-600 transition-colors" />
                                         {unreadCount > 0 && (
-                                            <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-sm">
+                                                {unreadCount > 9 ? "9+" : unreadCount}
+                                            </span>
                                         )}
                                     </Button>
                                 </DropdownMenuTrigger>

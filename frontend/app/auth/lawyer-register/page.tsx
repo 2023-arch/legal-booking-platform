@@ -58,6 +58,41 @@ export default function LawyerRegisterWizard() {
     const [step, setStep] = useState(1)
     const [isLoading, setIsLoading] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
+    const [docErrors, setDocErrors] = useState<Record<string,string>>({});
+
+    const validateDocuments = () => {
+        const errors: Record<string,string> = {};
+        const values = form.getValues();
+        if (!values.profilePhoto) {
+            errors.profilePhoto = "Profile Photo is required";
+        }
+        if (!values.barCertificate) {
+            errors.barCertificate = "Bar enrollment certificate is required";
+        }
+        if (!values.idProof) {
+            errors.identity = "Government ID is required";
+        }
+        setDocErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldName: any) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Reset specific error
+        setDocErrors(prev => ({ ...prev, [fieldName]: "" }));
+
+        // 5MB limit
+        if (file.size > 5 * 1024 * 1024) {
+            setDocErrors(prev => ({ ...prev, [fieldName]: "File size must be less than 5MB" }));
+            e.target.value = ''; // clear input
+            form.setValue(fieldName, null);
+            return;
+        }
+
+        form.setValue(fieldName, file);
+    };
 
     const form = useForm<z.infer<typeof wizardSchema>>({
         resolver: zodResolver(wizardSchema),
@@ -91,6 +126,8 @@ export default function LawyerRegisterWizard() {
     const prevStep = () => setStep(step - 1)
 
     async function onSubmit(values: z.infer<typeof wizardSchema>) {
+        if (!validateDocuments()) return;
+
         setIsLoading(true)
         console.log("Submitting Lawyer Application:", values)
 
@@ -422,12 +459,12 @@ export default function LawyerRegisterWizard() {
                                                 <Input
                                                     type="file"
                                                     accept=".jpg,.jpeg,.png"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) form.setValue('profilePhoto', file);
-                                                    }}
+                                                    onChange={(e) => handleFileUpload(e, 'profilePhoto')}
                                                     className="max-w-xs"
                                                 />
+                                                {docErrors.profilePhoto && (
+                                                    <p className="text-sm font-medium text-destructive mt-2">{docErrors.profilePhoto}</p>
+                                                )}
                                             </CardContent>
                                         </Card>
 
@@ -439,12 +476,12 @@ export default function LawyerRegisterWizard() {
                                                 <Input
                                                     type="file"
                                                     accept=".pdf,.jpg,.jpeg,.png"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) form.setValue('barCertificate', file);
-                                                    }}
+                                                    onChange={(e) => handleFileUpload(e, 'barCertificate')}
                                                     className="max-w-xs"
                                                 />
+                                                {docErrors.barCertificate && (
+                                                    <p className="text-sm font-medium text-destructive mt-2">{docErrors.barCertificate}</p>
+                                                )}
                                             </CardContent>
                                         </Card>
 
@@ -456,12 +493,12 @@ export default function LawyerRegisterWizard() {
                                                 <Input
                                                     type="file"
                                                     accept=".pdf,.jpg,.jpeg,.png"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) form.setValue('idProof', file);
-                                                    }}
+                                                    onChange={(e) => handleFileUpload(e, 'idProof')}
                                                     className="max-w-xs"
                                                 />
+                                                {docErrors.identity && (
+                                                    <p className="text-sm font-medium text-destructive mt-2">{docErrors.identity}</p>
+                                                )}
                                             </CardContent>
                                         </Card>
 

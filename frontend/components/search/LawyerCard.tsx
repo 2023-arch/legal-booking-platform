@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Briefcase, Gavel, Languages } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { formatCurrency } from "@/lib/utils";
 import BookingModal from "@/components/booking/BookingModal";
 
@@ -32,9 +33,15 @@ export default function LawyerCard({ lawyer }: LawyerCardProps) {
             <div className="flex flex-col md:flex-row">
                 {/* Lawyer Photo Section */}
                 <div className="w-full md:w-64 bg-slate-100 relative">
-                    <div className="aspect-[4/5] w-full h-full bg-slate-200 flex items-center justify-center text-slate-400">
+                    <div className="aspect-[4/5] w-full h-full flex items-center justify-center text-slate-400">
                         {lawyer.photo_url ? (
-                            <img src={lawyer.photo_url} alt={lawyer.name} className="w-full h-full object-cover" />
+                            <Image 
+                                src={lawyer.photo_url || "/placeholder-lawyer.jpg"} 
+                                alt={lawyer.name} 
+                                width={256} 
+                                height={320}
+                                className="w-full h-full object-cover" 
+                            />
                         ) : (
                             <span className="text-4xl font-bold text-slate-300">{lawyer.name.charAt(0)}</span>
                         )}

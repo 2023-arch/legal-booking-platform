@@ -10,7 +10,8 @@ import {
     CreditCard,
     Download,
     Calendar,
-    Briefcase
+    Briefcase,
+    Clock
 } from "lucide-react";
 import {
     BarChart,
@@ -113,11 +114,11 @@ export default function EarningsPage() {
                                     <BarChart data={weeklyData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />
-                                        <YAxis axisLine={false} tickLine={false} fontSize={12} tickFormatter={(value) => `₹${value}`} />
+                                        <YAxis axisLine={false} tickLine={false} fontSize={12} tickFormatter={(value: any) => `₹${value}`} />
                                         <Tooltip
                                             cursor={{ fill: 'transparent' }}
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                            formatter={(value) => [`₹${value}`, 'Revenue']}
+                                            formatter={(value: any) => [`₹${value}`, 'Revenue']}
                                         />
                                         <Bar dataKey="revenue" fill="#0f172a" radius={[4, 4, 0, 0]} maxBarSize={40} />
                                     </BarChart>
@@ -128,10 +129,10 @@ export default function EarningsPage() {
                                     <LineChart data={monthlyData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} />
-                                        <YAxis axisLine={false} tickLine={false} fontSize={12} tickFormatter={(value) => `₹${value}`} />
+                                        <YAxis axisLine={false} tickLine={false} fontSize={12} tickFormatter={(value: any) => `₹${value}`} />
                                         <Tooltip
                                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                            formatter={(value) => [`₹${value}`, 'Revenue']}
+                                            formatter={(value: any) => [`₹${value}`, 'Revenue']}
                                         />
                                         <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                                     </LineChart>
@@ -201,5 +202,3 @@ export default function EarningsPage() {
         </div>
     );
 }
-// Icon import fix
-import { Clock } from "lucide-react";

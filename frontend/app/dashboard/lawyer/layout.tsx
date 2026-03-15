@@ -42,7 +42,7 @@ export default function LawyerDashboardLayout({
                         <div className="h-8 w-px bg-slate-200" />
                         <div className="flex items-center gap-3">
                             <div className="text-right hidden md:block">
-                                <div className="text-sm font-medium text-slate-900">Adv. {(user as any)?.full_name || user?.name || "Lawyer"}</div>
+                                <div className="text-sm font-medium text-slate-900">{"Adv. " + ((user as any)?.full_name || "Loading...")}</div>
                                 <div className="text-xs text-green-600 font-medium">● Online</div>
                             </div>
                             <Avatar>

@@ -60,7 +60,7 @@ export default function AIAssistantPage() {
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: "Sorry, something went wrong. Please try again.",
+                content: "I am unable to answer that right now. Please try again.",
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, errorMsg]);
@@ -122,11 +122,7 @@ export default function AIAssistantPage() {
                                 <AvatarFallback><Bot className="h-4 w-4 text-blue-600" /></AvatarFallback>
                             </Avatar>
                             <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm">
-                                <div className="flex gap-1">
-                                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
-                                </div>
+                                <div className="typing-dots text-sm text-slate-500 italic">Gemini is thinking...</div>
                             </div>
                         </div>
                     )}

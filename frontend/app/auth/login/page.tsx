@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -32,9 +32,10 @@ const formSchema = z.object({
 
 export default function LoginPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { login } = useAuth(); // Hook
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [authError, setAuthError] = useState<string>("")
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -46,16 +47,17 @@ export default function LoginPage() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true)
-        setError(null)
+        setAuthError("")
         try {
-            await login(values.email, values.password);
+            const returnUrl = searchParams.get("returnUrl");
+            await login(values.email, values.password, returnUrl);
             // Redirect is handled inside login() now
         } catch (err: any) {
             console.error("Login failed:", err);
-            const message = err.response?.data?.detail
-                || err.response?.data?.message
-                || "Login failed. Please check your credentials.";
-            setError(message);
+            setAuthError(
+                err.response?.data?.detail ||
+                "Invalid email or password. Please try again."
+            );
         } finally {
             setIsLoading(false)
         }
@@ -114,7 +116,7 @@ export default function LoginPage() {
                                                     {...field} 
                                                     onChange={(e) => {
                                                         field.onChange(e);
-                                                        setError(null);
+                                                        setAuthError("");
                                                     }}
                                                 />
                                             </FormControl>
@@ -144,7 +146,7 @@ export default function LoginPage() {
                                                     {...field} 
                                                     onChange={(e) => {
                                                         field.onChange(e);
-                                                        setError(null);
+                                                        setAuthError("");
                                                     }}
                                                 />
                                             </FormControl>
@@ -153,9 +155,9 @@ export default function LoginPage() {
                                     )}
                                 />
 
-                                {error && (
-                                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-3 text-sm mb-4">
-                                        {error}
+                                {authError && (
+                                    <div className="bg-red-50 border border-red-300 text-red-700 rounded-lg p-3 text-sm mb-4">
+                                        {authError}
                                     </div>
                                 )}
 

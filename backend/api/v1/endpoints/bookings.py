@@ -1,7 +1,7 @@
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 import uuid
 import json
 from datetime import datetime, timedelta
@@ -91,6 +91,19 @@ async def create_booking_draft(
     }
     
     await redis.setex(f"booking_draft:{draft_id}", 900, json.dumps(draft_data))
+    
+    # Notify the lawyer about a new booking request (Draft Stage)
+    from models.notification import Notification
+    notif = Notification(
+        user_id=lawyer.user_id,
+        type="new_booking_request",
+        title="New consultation request",
+        message=f"{current_user.full_name} has requested a consultation",
+        related_id=None,
+        is_read=False
+    )
+    db.add(notif)
+    await db.commit()
     
     return {
         "booking_draft_id": draft_id,
@@ -311,3 +324,45 @@ async def update_booking_status(
     # TODO: Trigger Notifications
     
     return booking
+
+@router.get("/lawyers/{lawyer_id}/availability")
+async def get_availability(lawyer_id: uuid.UUID, date: str, db: AsyncSession = Depends(deps.get_db)):
+    # Fetch lawyer to get their schedule
+    lawyer = await db.get(Lawyer, lawyer_id)
+    if not lawyer:
+        raise HTTPException(status_code=404, detail="Lawyer not found")
+        
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
+    day_name = date_obj.strftime("%A").lower()
+    
+    availability = lawyer.availability or {}
+    day_schedule = availability.get(day_name, {"active": False})
+    
+    # If lawyer is not active on this day, return empty slots
+    if not day_schedule.get("active", False):
+        return {"date": date, "available_slots": [], "booked_slots": []}
+        
+    # Get all confirmed/pending bookings for this lawyer on this date
+    bookings = await db.execute(
+        select(Booking)
+        .where(Booking.lawyer_id == lawyer_id)
+        .where(func.date(Booking.scheduled_time) == date)
+        .where(Booking.status.in_(["confirmed", "pending"]))
+    )
+    booked_slots = [b.scheduled_time.strftime("%H:%M") for b in bookings.scalars() if b.scheduled_time]
+    
+    # Generate all possible slots based on schedule
+    start_time = day_schedule.get("start", "09:00")
+    end_time = day_schedule.get("end", "18:00")
+    
+    start_hour = int(start_time.split(":")[0])
+    end_hour = int(end_time.split(":")[0])
+    
+    all_slots = [f"{h:02d}:00" for h in range(start_hour, end_hour)]
+    available = [s for s in all_slots if s not in booked_slots]
+    
+    return {
+        "date": date, 
+        "available_slots": available,
+        "booked_slots": booked_slots
+    }

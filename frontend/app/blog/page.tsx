@@ -6,68 +6,28 @@ import { Badge } from "@/components/ui/badge";
 
 const blogPosts = [
     {
-        title: "Understanding Section 498A IPC: A Complete Guide",
-        excerpt: "Section 498A deals with cruelty by husband or relatives. Learn about its provisions, recent amendments, and how to protect your rights.",
-        author: "Adv. Priya Sharma",
-        date: "January 25, 2026",
-        category: "Criminal Law",
-        readTime: "8 min read"
+        title: "How AI is Changing Legal Consultations in India",
+        excerpt: "LegalBook uses Gemini AI to summarize your legal problem before every consultation, saving lawyers and clients valuable time...",
+        author: "LegalBook Team",
+        date: "March 2026",
+        category: "Legal Tech",
+        readTime: "4 min read"
     },
     {
-        title: "How to File an FIR Online in India (2026 Guide)",
-        excerpt: "Step-by-step guide to filing FIRs online across different states. Know your rights and the process for cyber crimes, theft, and more.",
-        author: "Adv. Rajesh Kumar",
-        date: "January 20, 2026",
-        category: "Legal Procedures",
+        title: "Understanding Your Rights: A Guide for First-Time Legal Consultation Users",
+        excerpt: "If you have never consulted a lawyer before, here is everything you need to know to prepare...",
+        author: "LegalBook Team",
+        date: "February 2026",
+        category: "Guide",
         readTime: "5 min read"
     },
     {
-        title: "Property Registration Process in Maharashtra",
-        excerpt: "Complete guide to property registration - documents required, stamp duty rates, online process, and common mistakes to avoid.",
-        author: "Adv. Amit Patil",
-        date: "January 15, 2026",
-        category: "Property Law",
-        readTime: "10 min read"
-    },
-    {
-        title: "Divorce Laws in India: Hindu Marriage Act vs Special Marriage Act",
-        excerpt: "Understand the differences between divorce procedures under various personal laws and which one applies to your case.",
-        author: "Adv. Kavitha Menon",
-        date: "January 10, 2026",
-        category: "Family Law",
-        readTime: "12 min read"
-    },
-    {
-        title: "Consumer Rights: How to File a Complaint in Consumer Court",
-        excerpt: "Your complete guide to consumer protection laws, filing complaints online, and getting refunds for defective products or services.",
-        author: "Adv. Sunita Rao",
-        date: "January 5, 2026",
-        category: "Consumer Law",
-        readTime: "7 min read"
-    },
-    {
-        title: "Startup Legal Checklist: From Incorporation to Funding",
-        excerpt: "Essential legal requirements for startups - business structure, founder agreements, IP protection, and ESOP policies explained.",
-        author: "Adv. Vikram Singh",
-        date: "December 28, 2025",
-        category: "Corporate Law",
-        readTime: "15 min read"
-    },
-    {
-        title: "Bail Provisions in India: Types, Procedure, and Rights",
-        excerpt: "Learn about regular bail, anticipatory bail, and interim bail. Know when you can apply and what the court considers.",
-        author: "Adv. Mohammed Khan",
-        date: "December 20, 2025",
-        category: "Criminal Law",
-        readTime: "9 min read"
-    },
-    {
-        title: "Cyber Crime Reporting: A Step-by-Step Guide",
-        excerpt: "From online fraud to social media harassment - learn how to report cyber crimes, preserve evidence, and get legal recourse.",
-        author: "Adv. Arjun Reddy",
-        date: "December 15, 2025",
-        category: "Cyber Law",
-        readTime: "6 min read"
+        title: "Why Escrow Payments Protect Both Clients and Lawyers",
+        excerpt: "LegalBook holds your payment in escrow until the consultation is complete. Here is how that protects you...",
+        author: "LegalBook Team",
+        date: "January 2026",
+        category: "Trust & Safety",
+        readTime: "3 min read"
     }
 ];
 

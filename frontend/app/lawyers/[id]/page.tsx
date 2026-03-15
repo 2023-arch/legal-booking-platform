@@ -48,7 +48,9 @@ export default function LawyerProfilePage() {
 
     const handleBookConsultation = () => {
         if (!user) {
-            router.push(`/auth/login?redirect=/booking/create?lawyer_id=${params.id}`);
+            const returnUrl = `/booking/create?lawyer_id=${params.id}`;
+            router.push(`/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+            return;
         } else {
             router.push(`/booking/create?lawyer_id=${params.id}`);
         }

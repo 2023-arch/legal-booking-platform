@@ -176,19 +176,23 @@ async def verify_payment(
     
     # Notifications Triggered Upon Payment/Booking Creation
     if user and lawyer_user:
-        # For User
+        # Notify user their payment is confirmed
         db.add(Notification(
             user_id=user.id,
-            title="Payment Confirmed",
-            message=f"Your payment for consultation with {lawyer_user.full_name} has been confirmed.",
+            type="booking_confirmed",
+            title="Booking confirmed",
+            message=f"Your consultation with {lawyer_user.full_name} is confirmed",
+            related_id=booking.id, 
             is_read=False
         ))
         
-        # For Lawyer
+        # Notify lawyer consultation is booked and paid
         db.add(Notification(
             user_id=lawyer_user.id,
-            title="New Booking Received",
-            message=f"{user.full_name} has booked and paid for a new consultation.",
+            type="consultation_paid",
+            title="Consultation confirmed & paid",
+            message=f"{user.full_name} has paid for their consultation",
+            related_id=booking.id, 
             is_read=False
         ))
     

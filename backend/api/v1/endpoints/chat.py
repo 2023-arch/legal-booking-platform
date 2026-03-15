@@ -88,17 +88,27 @@ async def websocket_endpoint(
     We pass JWT token as query param.
     """
     # 1. Authenticate
+    if not token:
+        await websocket.close(code=4001)
+        return
+        
     try:
-        # We need to manually decode token here or use a dependency that works with WebSocket
-        # For simplicity, assuming valid token lets proceed, but in prod we verify user
-        from core.security import jwt, settings
+        from jose import jwt, JWTError
+        from core.config import settings
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
         if not user_id:
-            await websocket.close(code=4003)
+            await websocket.close(code=4001)
             return
-    except Exception:
-        await websocket.close(code=4003)
+            
+        # Optional: verify user exists in DB
+        user = await db.get(User, uuid.UUID(user_id))
+        if not user:
+            await websocket.close(code=4001)
+            return
+            
+    except JWTError:
+        await websocket.close(code=4001)
         return
 
     # 2. Check Permissions and Connect

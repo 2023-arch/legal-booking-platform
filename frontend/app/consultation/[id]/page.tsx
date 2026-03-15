@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { bookingsAPI } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
@@ -10,6 +12,9 @@ import { format } from "date-fns";
 export default function ConsultationRoom({ params }: { params: { id: string } }) {
     const { id } = params;
     const { toast } = useToast();
+    const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
+    
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -17,6 +22,23 @@ export default function ConsultationRoom({ params }: { params: { id: string } })
         const fetchBooking = async () => {
             try {
                 const data = await bookingsAPI.getBookingById(id);
+                
+                // Auth Check
+                const isClient = data.user_id === user?.id;
+                // Assuming lawyer object contains the lawyer's user_id or we match lawyer profile ID depending on payload structure
+                // But from standard API, lawyer.user.id or lawyer.user_id should exist
+                const isLawyer = data.lawyer?.user_id === user?.id || data.lawyer?.user?.id === user?.id;
+                
+                if (!isClient && !isLawyer && !user?.is_superuser) {
+                    toast({
+                        variant: "destructive",
+                        title: "Access Denied",
+                        description: "You are not authorized to view this consultation."
+                    });
+                    router.push("/dashboard");
+                    return;
+                }
+                
                 setBooking(data);
             } catch (err) {
                 console.error("Failed to fetch booking:", err);
@@ -30,12 +52,14 @@ export default function ConsultationRoom({ params }: { params: { id: string } })
             }
         };
 
-        if (id) {
+        if (id && !authLoading && user) {
             fetchBooking();
+        } else if (!authLoading && !user) {
+            router.push("/auth/login");
         }
-    }, [id, toast]);
+    }, [id, toast, user, authLoading, router]);
 
-    if (loading) {
+    if (loading || authLoading) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -54,10 +78,6 @@ export default function ConsultationRoom({ params }: { params: { id: string } })
         );
     }
 
-    // From the requirements, consultation start endpoint returns the actual meet link
-    // However, the prompt says the booking object should hold consultation.meet_link.
-    // If it's loaded within booking.consultation.meet_link we use that. 
-    // Otherwise fallback to safe null.
     const meetLink = booking.consultation?.meet_link;
 
     const copyToClipboard = () => {
@@ -115,7 +135,7 @@ export default function ConsultationRoom({ params }: { params: { id: string } })
                                         Duration Booked
                                     </div>
                                     <div className="font-medium text-slate-900">
-                                        {booking.duration_minutes || 30} minutes
+                                        {booking.duration_minutes || 60} minutes
                                     </div>
                                 </div>
                             </div>
@@ -141,7 +161,7 @@ export default function ConsultationRoom({ params }: { params: { id: string } })
                                     onClick={() => meetLink && window.open(meetLink, '_blank')}
                                 >
                                     <Video className="h-5 w-5" />
-                                    {meetLink ? "Join Google Meet" : "Link not yet available"}
+                                    {meetLink ? "Join Google Meet" : "Link Generating..."}
                                 </Button>
                                 
                                 <Button 
@@ -151,12 +171,12 @@ export default function ConsultationRoom({ params }: { params: { id: string } })
                                     onClick={copyToClipboard}
                                 >
                                     {meetLink ? <Copy className="h-4 w-4" /> : <ExternalLink className="h-4 w-4 text-slate-400" />}
-                                    Copy Meet Link
+                                    Copy Link
                                 </Button>
                             </div>
 
                             <div className="text-xs text-slate-500 text-center bg-slate-50 p-3 rounded-lg border">
-                                Both you and your lawyer have received a calendar invite with the Google Meet link.
+                                A Google Calendar invite was sent to your email with this link.
                             </div>
                         </div>
 

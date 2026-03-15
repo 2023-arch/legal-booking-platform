@@ -341,6 +341,32 @@ async def verify_lawyer(
     await db.refresh(lawyer)
     return lawyer
 
+@router.patch("/me/availability")
+async def update_availability(
+    availability: dict,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """
+    Update lawyer availability schedule.
+    """
+    if current_user.user_type != "lawyer":
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    query = select(Lawyer).where(Lawyer.user_id == current_user.id)
+    result = await db.execute(query)
+    lawyer = result.scalar_one_or_none()
+    
+    if not lawyer:
+        raise HTTPException(status_code=404, detail="Lawyer profile not found")
+        
+    lawyer.availability = availability
+    db.add(lawyer)
+    await db.commit()
+    await db.refresh(lawyer)
+    
+    return {"status": "success", "availability": lawyer.availability}
+
 # Helper to generate signed URLs for response
 # Ideally, we should intercept response and sign URLs, or sign them on retrieval
 

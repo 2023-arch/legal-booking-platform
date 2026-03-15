@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Text, ForeignKey, ARRAY, DateTime, UniqueConstraint
+from sqlalchemy import Column, String, Integer, Text, ForeignKey, ARRAY, DateTime, UniqueConstraint, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -21,6 +21,16 @@ class Lawyer(Base):
     
     verification_status = Column(String(20), default='pending_verification', nullable=False) # pending_verification, verified, rejected
     rejection_reason = Column(Text, nullable=True)
+    
+    availability = Column(JSON, default={
+        "monday":    {"start": "09:00", "end": "18:00", "active": True},
+        "tuesday":   {"start": "09:00", "end": "18:00", "active": True},
+        "wednesday": {"start": "09:00", "end": "18:00", "active": True},
+        "thursday":  {"start": "09:00", "end": "18:00", "active": True},
+        "friday":    {"start": "09:00", "end": "18:00", "active": True},
+        "saturday":  {"start": "10:00", "end": "14:00", "active": False},
+        "sunday":    {"start": "10:00", "end": "14:00", "active": False},
+    })
     
     bar_council_certificate_url = Column(String, nullable=False)
     id_proof_url = Column(String, nullable=False)

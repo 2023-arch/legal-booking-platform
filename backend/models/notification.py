@@ -12,6 +12,9 @@ class Notification(Base):
     
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
+    type = Column(String(50), nullable=True)
+    related_id = Column(UUID(as_uuid=True), nullable=True)
+    is_read = Column(Boolean, default=False)
     is_read = Column(Boolean, default=False)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import {
     Scale, ArrowLeft, RefreshCw, CheckCircle, XCircle,
     Clock, Eye, FileText, Phone, Mail, Shield,
@@ -211,9 +212,11 @@ function AdminLawyersContent() {
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
                                                 {lawyer.profile_photo_url ? (
-                                                    <img
+                                                    <Image
                                                         src={lawyer.profile_photo_url}
                                                         alt={lawyer.full_name}
+                                                        width={48}
+                                                        height={48}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
@@ -252,9 +255,11 @@ function AdminLawyersContent() {
                                     <div className="flex items-start gap-4">
                                         <div className="w-20 h-20 rounded-xl bg-slate-700 overflow-hidden flex-shrink-0">
                                             {selectedLawyer.profile_photo_url ? (
-                                                <img
+                                                <Image
                                                     src={selectedLawyer.profile_photo_url}
                                                     alt={selectedLawyer.full_name}
+                                                    width={80}
+                                                    height={80}
                                                     className="w-full h-full object-cover"
                                                 />
                                             ) : (

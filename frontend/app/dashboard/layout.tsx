@@ -36,8 +36,8 @@ export default function DashboardLayout({
                         <div className="h-8 w-px bg-slate-200" />
                         <div className="flex items-center gap-3">
                             <div className="text-right hidden md:block">
-                                <div className="text-sm font-medium text-slate-900">{(user as any)?.full_name || user?.name || "User"}</div>
-                                <div className="text-xs text-slate-500">{(user as any)?.subscription_tier || "Standard"} Member</div>
+                                <div className="text-sm font-medium text-slate-900">{(user as any)?.full_name || "Loading..."}</div>
+                                <div className="text-xs text-slate-500">{(user as any)?.is_premium ? "Premium Member" : "Standard Member"}</div>
                             </div>
                             <Avatar>
                                 <AvatarImage src="https://github.com/shadcn.png" />

@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, MapPin, Languages, Briefcase, ChevronRight } from 'lucide-react';
+import { Star, MapPin, Languages, Briefcase, ChevronRight, Filter, X } from 'lucide-react';
 import Link from 'next/link';
 
 function SearchPageContent() {
@@ -21,6 +21,7 @@ function SearchPageContent() {
   const [lawyers, setLawyers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<any>({ total: 0, page: 1, total_pages: 1 });
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Location states
   const [states, setStates] = useState<any[]>([]);
@@ -125,6 +126,17 @@ function SearchPageContent() {
     setLoading(true);
     try {
       const params: any = { ...filters };
+      
+      // The backend /lawyers endpoint expects max_fee/min_fee, not max_price/min_price
+      if (params.max_price !== undefined) {
+        params.max_fee = params.max_price;
+        delete params.max_price;
+      }
+      if (params.min_price !== undefined) {
+        params.min_fee = params.min_price;
+        delete params.min_price;
+      }
+
       // Remove empty values
       Object.keys(params).forEach(key => {
         if (params[key] === '' || params[key] === null) delete params[key];
@@ -189,10 +201,33 @@ function SearchPageContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Mobile Filter Toggle */}
+          <button
+            className="lg:hidden fixed bottom-6 right-6 z-[60] bg-blue-600 text-white px-5 py-3 rounded-full shadow-xl flex items-center gap-2 font-medium"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <Filter size={18} /> Filters
+          </button>
+
           {/* Filters Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6 sticky top-4">
-              <div className="flex justify-between items-center mb-6">
+          <div className={`
+              fixed inset-0 z-[70] bg-white overflow-y-auto p-5 transition-transform duration-300
+              lg:relative lg:inset-auto lg:bg-transparent lg:p-0 lg:z-0 lg:block lg:col-span-1
+              ${filtersOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"}
+          `}>
+            {/* Mobile Sidebar Close Header */}
+            <div className="flex justify-between items-center lg:hidden mb-6 pb-4 border-b">
+              <h3 className="text-xl font-bold">Filters</h3>
+              <button 
+                onClick={() => setFiltersOpen(false)}
+                className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"
+              >
+                <X size={20} className="text-slate-600" />
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg lg:shadow p-1 lg:p-6 lg:sticky lg:top-4">
+              <div className="hidden lg:flex justify-between items-center mb-6">
                 <h2 className="font-semibold text-lg">Filters</h2>
                 <Button variant="ghost" size="sm" onClick={clearFilters}>Clear All</Button>
               </div>
@@ -326,7 +361,7 @@ function SearchPageContent() {
           </div>
 
           {/* Results */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 pb-24 lg:pb-0">
             <div className="flex justify-between items-center mb-6">
               <p className="text-gray-600">
                 {loading ? 'Searching...' : `${pagination.total || 0} lawyers found`}
@@ -360,15 +395,11 @@ function SearchPageContent() {
                 ))}
               </div>
             ) : lawyers.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <div className="text-gray-400 mb-4">
-                  <svg className="h-24 w-24 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">No lawyers found</h3>
-                <p className="text-gray-600 mb-6">Try adjusting your filters or search in a different location</p>
-                <Button onClick={clearFilters}>Clear All Filters</Button>
+              <div className="text-center py-16">
+                <p className="text-gray-500 text-lg">
+                  No lawyers found matching your filters.
+                </p>
+                <button onClick={() => clearFilters()}>Clear Filters</button>
               </div>
             ) : (
               <>

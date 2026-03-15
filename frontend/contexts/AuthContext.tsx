@@ -15,7 +15,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (email_or_phone: string, password: string) => Promise<void>;
+    login: (email_or_phone: string, password: string, redirectUrl?: string | null) => Promise<void>;
     register: (data: any) => Promise<string>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const login = async (email_or_phone: string, password: string) => {
+    const login = async (email_or_phone: string, password: string, redirectUrl?: string | null) => {
         try {
             const { data } = await api.login(email_or_phone, password);
 
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user: '/dashboard',
             };
 
-            const redirect = redirectMap[userData.user_type] || '/dashboard';
+            const redirect = redirectUrl || redirectMap[userData.user_type] || '/dashboard';
             router.push(redirect);
         } catch (error: any) {
             console.error("Login failed", error);
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.clear();
             deleteCookie('token');
             setUser(null);
-            router.push('/auth/login');
+            router.push('/');
         }
     };
 

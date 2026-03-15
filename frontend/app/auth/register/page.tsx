@@ -70,9 +70,14 @@ export default function RegisterPage() {
             // Registration successful, AuthContext might auto-login or we redirect to dashboard
             router.push('/dashboard');
 
-        } catch (error: any) {
-            console.error("Registration failed:", error);
-            alert(error.message || "Registration failed. Please try again.");
+        } catch (err: any) {
+            console.error("Registration failed:", err);
+            const detail = err.response?.data?.detail || err.message;
+            if (typeof detail === 'string' && detail.includes("already")) {
+                form.setError("email", { message: "This email is already registered. Try logging in." });
+            } else {
+                form.setError("root", { message: detail || "Registration failed." });
+            }
         } finally {
             setIsLoading(false)
         }
@@ -182,6 +187,13 @@ export default function RegisterPage() {
                                         </FormItem>
                                     )}
                                 />
+
+                                {form.formState.errors.root && (
+                                    <div className="bg-red-50 border border-red-300 text-red-700 rounded-lg p-3 text-sm">
+                                        {form.formState.errors.root.message}
+                                    </div>
+                                )}
+
                                 <Button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 h-11 text-base" disabled={isLoading}>
                                     {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
                                     Create Account
