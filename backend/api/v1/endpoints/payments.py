@@ -57,6 +57,7 @@ except Exception as e:
 async def verify_payment(
     *,
     payment_in: PaymentVerify,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(deps.get_db),
     # current_user: User = Depends(deps.get_current_user) # Payment callback might be public or user-initiated
 ):
@@ -178,6 +179,26 @@ async def verify_payment(
     await redis.delete(f"booking_draft:{draft_id}")
     await redis.delete(f"order_draft:{payment_in.razorpay_order_id}")
     
-    # 5. Notify Lawyer (TODO background task)
+    # 5. Notify Users via Background Emails
+    from core.email import booking_confirmed, payment_receipt
+    
+    if user and user.email:
+        lawyer_name = lawyer_user.full_name if lawyer_user else "Your Lawyer"
+        date_str = preferred_time.strftime("%B %d, %Y at %I:%M %p") if preferred_time else "TBD"
+        
+        background_tasks.add_task(
+            booking_confirmed,
+            user_email=user.email,
+            lawyer_name=lawyer_name,
+            date_time=date_str,
+            meet_link=meet_link or ""
+        )
+        
+        background_tasks.add_task(
+            payment_receipt,
+            user_email=user.email,
+            amount=float(consultation_fee),
+            booking_id=str(booking_id)
+        )
     
     return {"success": True, "booking_id": str(booking_id)}

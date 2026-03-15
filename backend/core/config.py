@@ -66,6 +66,12 @@ class Settings(BaseSettings):
     # Error Tracking (Fix #10)
     SENTRY_DSN: str = ""  # Set to enable Sentry error tracking
 
+    # Email / SMTP Settings
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "noreply@legalbook.in"
+    SMTP_PASSWORD: str = ""
+
     class Config:
         case_sensitive = True
         env_file = ".env"
