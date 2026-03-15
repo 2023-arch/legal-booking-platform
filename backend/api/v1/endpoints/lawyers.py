@@ -26,6 +26,7 @@ async def register_lawyer(
     bio: Optional[str] = Form(None),
     languages: str = Form(...), # JSON string list
     consultation_fee: int = Form(...),
+    razorpay_fund_id: str = Form(..., description="Razorpay Fund Account ID for payouts"),
     court_ids: str = Form(...), # JSON string list of UUIDs
     specializations: str = Form(...), # JSON string list of objects
     bar_council_certificate: UploadFile = File(..., description="Bar Council Certificate (required for verification)"),
@@ -82,6 +83,7 @@ async def register_lawyer(
         bio=bio,
         languages=languages_list,
         consultation_fee=consultation_fee,
+        razorpay_fund_id=razorpay_fund_id,
         bar_council_certificate_url=cert_url,
         id_proof_url=id_proof_url,
         profile_photo_url=photo_url,

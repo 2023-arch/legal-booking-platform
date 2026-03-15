@@ -120,6 +120,42 @@ async def end_consultation(
         booking.completed_at = datetime.utcnow()
         db.add(booking)
         
+        # Calculate payout (total minus 10% platform commission)
+        payout_amount = int(booking.consultation_fee * 0.90)
+        
+        # Get lawyer
+        query = select(Lawyer).where(Lawyer.id == booking.lawyer_id)
+        result = await db.execute(query)
+        lawyer = result.scalar_one_or_none()
+        
+        if lawyer and lawyer.razorpay_fund_id:
+            from core.payment import client as razorpay_client
+            from models.payment import Escrow
+            import logging
+            
+            if razorpay_client:
+                try:
+                    payout = razorpay_client.payout.create({
+                        "account_number": settings.RAZORPAY_ACCOUNT_NUMBER,
+                        "fund_account_id": lawyer.razorpay_fund_id,
+                        "amount": payout_amount * 100, # Paise
+                        "currency": "INR",
+                        "mode": "IMPS",
+                        "purpose": "payout",
+                        "narration": f"LegalBook consultation {consultation.id}"
+                    })
+                    
+                    esc_query = select(Escrow).where(Escrow.booking_id == booking.id)
+                    esc_res = await db.execute(esc_query)
+                    escrow = esc_res.scalar_one_or_none()
+                    
+                    if escrow:
+                        escrow.payout_status = "released"
+                        escrow.payout_id = payout.get("id")
+                        db.add(escrow)
+                except Exception as e:
+                    logging.getLogger(__name__).error(f"Payout failed for booking {booking.id}: {e}")
+        
     await db.commit()
     
     return {"success": True}

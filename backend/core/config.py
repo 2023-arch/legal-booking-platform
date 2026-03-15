@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     # External APIs
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
+    RAZORPAY_ACCOUNT_NUMBER: str = ""
     GEMINI_API_KEY: str = ""
     AGORA_APP_ID: str = ""
     AGORA_APP_CERTIFICATE: str = ""

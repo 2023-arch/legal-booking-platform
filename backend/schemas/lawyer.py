@@ -43,6 +43,7 @@ class Lawyer(LawyerBase):
     id_proof_url: str
     profile_photo_url: Optional[str] = None
     verified_at: Optional[datetime] = None
+    razorpay_fund_id: Optional[str] = None
     
     courts: List[Court] = []  # Need to map from relationship
     specializations: List[LawyerSpecializationResponse] = []

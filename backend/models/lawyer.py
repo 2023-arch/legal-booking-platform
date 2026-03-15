@@ -17,6 +17,7 @@ class Lawyer(Base):
     bio = Column(Text, nullable=True)
     languages = Column(ARRAY(String), nullable=False)
     consultation_fee = Column(Integer, nullable=False)
+    razorpay_fund_id = Column(String(100), nullable=True) # Used for payouts
     
     verification_status = Column(String(20), default='pending_verification', nullable=False) # pending_verification, verified, rejected
     rejection_reason = Column(Text, nullable=True)
