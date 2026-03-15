@@ -11,10 +11,30 @@ from core.websocket import manager
 from db.session import get_db
 from models.user import User
 from models.booking import Booking
+from models.lawyer import Lawyer
 from models.chat import Message
 from pydantic import BaseModel
 
 router = APIRouter()
+
+async def verify_chat_access(user_id: str, booking_id: str, db: AsyncSession):
+    try:
+        b_uuid = uuid.UUID(str(booking_id))
+    except Exception:
+        raise WebSocketDisconnect(code=4004, reason="Invalid booking ID")
+        
+    booking = await db.get(Booking, b_uuid)
+    if not booking:
+        raise WebSocketDisconnect(code=4004, reason="Booking not found")
+
+    lawyer = await db.get(Lawyer, booking.lawyer_id)
+    is_booking_user = (str(booking.user_id) == str(user_id))
+    is_booking_lawyer = (lawyer and str(lawyer.user_id) == str(user_id))
+
+    if not (is_booking_user or is_booking_lawyer):
+        raise WebSocketDisconnect(code=4003, reason="Access denied")
+    
+    return booking
 
 class MessageSchema(BaseModel):
     id: uuid.UUID
@@ -42,16 +62,12 @@ async def get_chat_history(
         raise HTTPException(status_code=404, detail="Booking not found")
         
     # Permission check
-    is_authorized = (booking.user_id == current_user.id) or (booking.lawyer_id == current_user.lawyer_profile[0].id if current_user.lawyer_profile else False)
-    # Note: lawyer_profile is list in User model backref
-    if not is_authorized and current_user.user_type == 'lawyer':
-         # Stricter check
-         pass
-         
-    if booking.user_id != current_user.id:
-         # Check lawyer relation
-         # We can improve this permission logic reuse
-         pass
+    lawyer = await db.get(Lawyer, booking.lawyer_id)
+    is_booking_user = (str(booking.user_id) == str(current_user.id))
+    is_booking_lawyer = (lawyer and str(lawyer.user_id) == str(current_user.id))
+    
+    if not (is_booking_user or is_booking_lawyer):
+        raise HTTPException(status_code=403, detail="Access denied")
          
     # Fetch messages
     stmt = select(Message).where(Message.booking_id == booking_id).order_by(Message.timestamp.asc()).offset(skip).limit(limit)
@@ -85,7 +101,13 @@ async def websocket_endpoint(
         await websocket.close(code=4003)
         return
 
-    # 2. Connect
+    # 2. Check Permissions and Connect
+    try:
+        await verify_chat_access(user_id, booking_id, db)
+    except WebSocketDisconnect as e:
+        await websocket.close(code=e.code, reason=e.reason)
+        return
+
     await manager.connect(websocket, booking_id)
     
     try:
