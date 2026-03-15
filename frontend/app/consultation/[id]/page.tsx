@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { bookingsAPI } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
@@ -29,7 +29,7 @@ export default function ConsultationRoom({ params }: { params: { id: string } })
                 // But from standard API, lawyer.user.id or lawyer.user_id should exist
                 const isLawyer = data.lawyer?.user_id === user?.id || data.lawyer?.user?.id === user?.id;
                 
-                if (!isClient && !isLawyer && !user?.is_superuser) {
+                if (!isClient && !isLawyer && !(user as any)?.is_superuser) {
                     toast({
                         variant: "destructive",
                         title: "Access Denied",
