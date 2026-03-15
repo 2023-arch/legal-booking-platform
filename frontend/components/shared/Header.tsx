@@ -1,15 +1,59 @@
 'use client';
 
 import Link from 'next/link';
-import { Scale, Menu, X } from 'lucide-react';
+import { Scale, Menu, X, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
+import api from '@/lib/api';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { formatDistanceToNow } from 'date-fns';
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { user } = useAuth();
     const isLoggedIn = !!user;
+    
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    const fetchNotifications = async () => {
+        if (!isLoggedIn) return;
+        try {
+            const res = await api.get('/notifications');
+            const data = res.data;
+            setNotifications(data);
+            setUnreadCount(data.filter((n: any) => !n.is_read).length);
+        } catch (error) {
+            console.error("Failed to fetch notifications:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+        // Setup polling every minute to keep it fresh
+        const intervalId = setInterval(fetchNotifications, 60000);
+        return () => clearInterval(intervalId);
+    }, [isLoggedIn]);
+
+    const handleOpenChange = async (open: boolean) => {
+        if (open && unreadCount > 0) {
+            try {
+                // Optimistically clear badge immediately
+                setUnreadCount(0);
+                await api.patch('/notifications/read-all');
+                // Refresh full state gracefully in background
+                fetchNotifications();
+            } catch (error) {
+                console.error("Failed to mark notifications read:", error);
+            }
+        }
+    };
 
     return (
         <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
@@ -38,12 +82,53 @@ export default function Header() {
                     </Link>
                 </div>
 
-                {/* Auth Buttons */}
+                {/* Auth Buttons & Notifications */}
                 <div className="hidden md:flex items-center gap-3">
                     {isLoggedIn ? (
-                        <Link href="/dashboard">
-                            <Button>Dashboard</Button>
-                        </Link>
+                        <div className="flex items-center gap-4">
+                            <DropdownMenu onOpenChange={handleOpenChange}>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="relative">
+                                        <Bell className="h-5 w-5 text-gray-600 hover:text-blue-600 transition-colors" />
+                                        {unreadCount > 0 && (
+                                            <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                                        )}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+                                    <div className="flex items-center justify-between px-4 py-2 border-b">
+                                        <span className="font-semibold text-sm">Notifications</span>
+                                    </div>
+                                    <div className="py-2">
+                                        {notifications.length === 0 ? (
+                                            <div className="px-4 py-4 text-center text-sm text-gray-500">
+                                                No new notifications
+                                            </div>
+                                        ) : (
+                                            notifications.map((notif) => (
+                                                <DropdownMenuItem key={notif.id} className="cursor-default flex flex-col items-start px-4 py-3 focus:bg-slate-50 border-b last:border-0">
+                                                    <div className="flex justify-between w-full items-start mb-1">
+                                                        <span className={`font-medium text-sm ${!notif.is_read ? 'text-blue-700' : 'text-slate-800'}`}>
+                                                            {notif.title}
+                                                        </span>
+                                                        <span className="text-xs text-slate-400 shrink-0 ml-2">
+                                                            {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-sm text-slate-600 break-words line-clamp-2">
+                                                        {notif.message}
+                                                    </span>
+                                                </DropdownMenuItem>
+                                            ))
+                                        )}
+                                    </div>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <Link href="/dashboard">
+                                <Button>Dashboard</Button>
+                            </Link>
+                        </div>
                     ) : (
                         <>
                             <Link href="/auth/login">

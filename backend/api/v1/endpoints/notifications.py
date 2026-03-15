@@ -59,3 +59,21 @@ async def mark_notification_read(
     await db.commit()
     await db.refresh(notification)
     return notification
+
+@router.patch("/read-all")
+async def mark_all_notifications_read(
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user)
+) -> Any:
+    """
+    Mark all unread notifications as read for the current user.
+    """
+    stmt = (
+        update(Notification)
+        .where(Notification.user_id == current_user.id)
+        .where(Notification.is_read == False)
+        .values(is_read=True)
+    )
+    await db.execute(stmt)
+    await db.commit()
+    return {"success": True, "message": "All notifications marked as read"}

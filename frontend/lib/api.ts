@@ -98,6 +98,11 @@ class ApiClient {
     return this.client.put(url, data, config);
   }
 
+  // Helper method for PATCH requests
+  async patch(url: string, data?: any, config?: any) {
+    return this.client.patch(url, data, config);
+  }
+
   // Helper method for DELETE requests
   async delete(url: string, config?: any) {
     return this.client.delete(url, config);

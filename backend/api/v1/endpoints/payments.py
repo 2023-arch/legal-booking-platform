@@ -15,6 +15,7 @@ from models.payment import Payment, Escrow
 from models.user import User
 from models.lawyer import Lawyer
 from models.consultation import Consultation
+from models.notification import Notification
 from schemas.payment import PaymentVerify
 
 router = APIRouter()
@@ -172,6 +173,24 @@ async def verify_payment(
         meet_link=meet_link
     )
     db.add(consultation)
+    
+    # Notifications Triggered Upon Payment/Booking Creation
+    if user and lawyer_user:
+        # For User
+        db.add(Notification(
+            user_id=user.id,
+            title="Payment Confirmed",
+            message=f"Your payment for consultation with {lawyer_user.full_name} has been confirmed.",
+            is_read=False
+        ))
+        
+        # For Lawyer
+        db.add(Notification(
+            user_id=lawyer_user.id,
+            title="New Booking Received",
+            message=f"{user.full_name} has booked and paid for a new consultation.",
+            is_read=False
+        ))
     
     await db.commit()
     
