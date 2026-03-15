@@ -76,3 +76,34 @@ def payment_receipt(user_email: str, amount: float, booking_id: str):
     </html>
     """
     send_email(user_email, subject, html_content)
+
+def password_reset(user_email: str, token: str):
+    subject = "Reset your LegalBook password"
+    # Ideally frontend URL should come from settings, hardcoding for now based on standard setup
+    frontend_url = "http://localhost:3000" if settings.BACKEND_CORS_ORIGINS and "http://localhost:3000" in settings.BACKEND_CORS_ORIGINS else "https://legal-booking-platform.vercel.app"
+    
+    # Try to extract the first valid frontend origin
+    if settings.BACKEND_CORS_ORIGINS:
+        first_origin = settings.BACKEND_CORS_ORIGINS[0]
+        if first_origin and not first_origin.startswith("["):
+             frontend_url = first_origin
+             
+    reset_link = f"{frontend_url}/auth/reset/{token}"
+
+    html_content = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #1a73e8;">Password Reset Request</h2>
+        <p>We received a request to reset the password for your LegalBook account associated with this email.</p>
+        <p>Click the secure link below to choose a new password. This link will expire in 30 minutes.</p>
+        <p style="margin: 20px 0;">
+            <a href="{reset_link}" style="background-color: #1a73e8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
+        </p>
+        <p>Or copy and paste this link into your browser:</p>
+        <p><a href="{reset_link}" style="color: #1a73e8; word-break: break-all;">{reset_link}</a></p>
+        <p>If you did not request a password reset, you can safely ignore this email.</p>
+        <p>Best Regards,<br>The LegalBook Team</p>
+      </body>
+    </html>
+    """
+    send_email(user_email, subject, html_content)

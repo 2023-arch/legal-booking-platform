@@ -13,8 +13,48 @@ from core.config import settings
 from models.user import User
 from schemas.user import UserCreate, User as UserSchema
 from schemas.token import Token
+from fastapi import BackgroundTasks
 
 router = APIRouter()
+
+# =============================================================================
+# REDIS IN-MEMORY FALLBACK (Same as payments)
+# =============================================================================
+import datetime as dt
+
+class InMemoryCache:
+    """Simple in-memory cache as fallback when Redis is unavailable"""
+    def __init__(self):
+        self._cache: dict = {}
+        self._expiry: dict = {}
+    
+    async def setex(self, key: str, seconds: int, value: str):
+        self._cache[key] = value
+        self._expiry[key] = dt.datetime.utcnow() + dt.timedelta(seconds=seconds)
+    
+    async def get(self, key: str) -> str | None:
+        if key not in self._cache:
+            return None
+        if dt.datetime.utcnow() > self._expiry.get(key, dt.datetime.max):
+            del self._cache[key]
+            del self._expiry[key]
+            return None
+        return self._cache[key]
+    
+    async def delete(self, key: str):
+        self._cache.pop(key, None)
+        self._expiry.pop(key, None)
+
+import logging
+logger = logging.getLogger(__name__)
+
+try:
+    from redis import asyncio as aioredis
+    redis = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+    logger.info("Redis connection initialized for auth")
+except Exception as e:
+    logger.warning(f"Redis unavailable ({e}), using in-memory cache fallback for auth")
+    redis = InMemoryCache()
 
 # =============================================================================
 # COOKIE HELPERS
@@ -232,14 +272,14 @@ class ResetPasswordRequest(BaseModel):
 async def forgot_password(
     *,
     db: AsyncSession = Depends(deps.get_db),
-    request: ForgotPasswordRequest
+    request: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks
 ) -> Any:
     """
     Request password reset. Always returns success to prevent email enumeration.
-    In production, this would send an email with the reset link.
     """
     import secrets
-    from datetime import datetime, timezone
+    from core.email import password_reset
     
     query = select(User).where(User.email == request.email)
     result = await db.execute(query)
@@ -247,8 +287,12 @@ async def forgot_password(
     
     if user:
         reset_token = secrets.token_urlsafe(32)
-        # TODO: Store token in DB and send email
-        pass
+        
+        # Store token in Redis: key="pwd_reset:{token}", value=user_id, TTL=1800 (30 mins)
+        await redis.setex(f"pwd_reset:{reset_token}", 1800, str(user.id))
+        
+        # Send email in background
+        background_tasks.add_task(password_reset, user.email, reset_token)
     
     return {
         "message": "If an account exists with this email, you will receive a password reset link."
@@ -262,9 +306,37 @@ async def reset_password(
     request: ResetPasswordRequest
 ) -> Any:
     """
-    Reset password using token from email.
-    Note: Full implementation requires password_reset_token column in User model.
+    Reset password using token from email to securely update user's credentials.
     """
+    # Look up token in Redis
+    cache_key = f"pwd_reset:{request.token}"
+    user_id_str = await redis.get(cache_key)
+    
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token invalid or expired"
+        )
+        
+    import uuid
+    query = select(User).where(User.id == uuid.UUID(user_id_str))
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token invalid or expired"
+        )
+        
+    # Hash new password and update user
+    user.hashed_password = security.get_password_hash(request.new_password)
+    db.add(user)
+    await db.commit()
+    
+    # Delete the used token
+    await redis.delete(cache_key)
+    
     return {
-        "message": "Password reset functionality will be fully enabled once email service is configured."
+        "message": "Password successfully reset"
     }
