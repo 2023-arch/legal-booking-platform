@@ -25,9 +25,21 @@ export default function AdminLoginPage() {
         setError("")
 
         try {
+            // Extract CSRF token from cookie
+            const csrfToken = typeof document !== 'undefined'
+                ? document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('csrf_token='))
+                    ?.split('=')[1]
+                : undefined;
+
             const response = await fetch(`${API_BASE_URL}/admin/login`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {})
+                },
+                credentials: 'include',
                 body: JSON.stringify(formData),
             })
 

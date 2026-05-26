@@ -30,6 +30,7 @@ CSRF_EXEMPT_PATHS = [
     "/api/v1/auth/forgot-password",
     "/api/v1/auth/reset-password",
     "/api/v1/auth/verify-email",
+    "/api/v1/admin/login",
 ]
 
 # Methods that require CSRF protection

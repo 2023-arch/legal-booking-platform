@@ -78,6 +78,7 @@ app.add_middleware(CSRFMiddleware)
 # Always include these origins as hardcoded fallback
 HARDCODED_ORIGINS = [
     "https://legal-booking-platform.vercel.app",
+    "https://legal-booking-platform-git-main-songhub2023-4676s-projects.vercel.app",
     "http://localhost:3000",
     "http://localhost:3001",
 ]

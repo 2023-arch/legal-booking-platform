@@ -134,7 +134,19 @@ async def register_lawyer(
     db.add(current_user)
     await db.commit()
     
-    return lawyer
+    # Re-query lawyer with all relations loaded to avoid MissingGreenlet error in response model
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(Lawyer)
+        .options(
+            selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.sub_specialization),
+        )
+        .where(Lawyer.id == lawyer.id)
+    )
+    result = await db.execute(stmt)
+    return result.unique().scalar_one()
 
 @router.get("/search")
 async def search_lawyers(
@@ -306,8 +318,18 @@ async def get_pending_lawyers(
     if not current_user.is_superuser:
          raise HTTPException(status_code=403, detail="Not authorized")
 
-    result = await db.execute(select(Lawyer).where(Lawyer.verification_status == "pending_verification"))
-    return result.scalars().all()
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(Lawyer)
+        .options(
+            selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.sub_specialization),
+        )
+        .where(Lawyer.verification_status == "pending_verification")
+    )
+    result = await db.execute(stmt)
+    return result.unique().scalars().all()
 
 @router.post("/{lawyer_id}/verify", response_model=LawyerSchema)
 async def verify_lawyer(
@@ -332,14 +354,33 @@ async def verify_lawyer(
         lawyer.verification_status = "verified"
         lawyer.verified_at = datetime.utcnow()
         lawyer.verified_by = current_user.id
-        lawyer.user.is_verified = True # Update User level flag too
+        
+        # Update User level flag directly via a query to avoid lazy loading
+        from sqlalchemy import update
+        await db.execute(
+            update(User)
+            .where(User.id == lawyer.user_id)
+            .values(is_verified=True)
+        )
     else:
         lawyer.verification_status = "rejected"
         lawyer.rejection_reason = reason
 
     await db.commit()
-    await db.refresh(lawyer)
-    return lawyer
+    
+    # Re-query lawyer with all relations loaded to avoid MissingGreenlet error in response model
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(Lawyer)
+        .options(
+            selectinload(Lawyer.courts).selectinload(LawyerCourt.court),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.specialization),
+            selectinload(Lawyer.specializations).selectinload(LawyerSpecialization.sub_specialization),
+        )
+        .where(Lawyer.id == lawyer.id)
+    )
+    result = await db.execute(stmt)
+    return result.unique().scalar_one()
 
 @router.patch("/me/availability")
 async def update_availability(

@@ -79,12 +79,23 @@ export default function AdminUsersPage() {
         setActionLoading(userId)
         try {
             const token = localStorage.getItem('admin_token')
+            
+            // Extract CSRF token from cookie
+            const csrfToken = typeof document !== 'undefined'
+                ? document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('csrf_token='))
+                    ?.split('=')[1]
+                : undefined;
+
             const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-active`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {})
+                },
+                credentials: 'include'
             })
 
             if (response.ok) {
